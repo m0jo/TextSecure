@@ -21,7 +21,6 @@ import android.util.Log;
 
 import org.thoughtcrime.securesms.contacts.ContactPhotoFactory;
 import org.thoughtcrime.securesms.database.CanonicalAddressDatabase;
-import org.thoughtcrime.securesms.util.NumberUtil;
 import org.whispersystems.textsecure.push.IncomingPushMessage;
 import org.whispersystems.textsecure.util.Util;
 
@@ -51,7 +50,7 @@ public class RecipientFactory {
   }
 
   private static Recipient getRecipientForNumber(Context context, String number, boolean asynchronous) {
-    long recipientId = CanonicalAddressDatabase.getInstance(context).getCanonicalAddress(number);
+    long recipientId = CanonicalAddressDatabase.getInstance(context).getCanonicalAddressId(number);
     return provider.getRecipient(context, recipientId, asynchronous);
   }
 
@@ -102,22 +101,15 @@ public class RecipientFactory {
            (recipient.indexOf('>', openBracketIndex) != -1);
   }
 
-  private static String parseBracketedNumber(String recipient)
-      throws RecipientFormattingException
-  {
+  private static String parseBracketedNumber(String recipient) {
     int begin    = recipient.indexOf('<');
     int end      = recipient.indexOf('>', begin);
     String value = recipient.substring(begin + 1, end);
 
-    if (NumberUtil.isValidSmsOrEmail(value))
-      return value;
-    else
-      throw new RecipientFormattingException("Bracketed value: " + value + " is not valid.");
+    return value;
   }
 
-  private static Recipient parseRecipient(Context context, String recipient, boolean asynchronous)
-      throws RecipientFormattingException
-  {
+  private static Recipient parseRecipient(Context context, String recipient, boolean asynchronous) {
     recipient = recipient.trim();
 
     if( recipient.length() == 0 )
@@ -126,10 +118,7 @@ public class RecipientFactory {
     if (hasBracketedNumber(recipient))
       return getRecipientForNumber(context, parseBracketedNumber(recipient), asynchronous);
 
-    if (NumberUtil.isValidSmsOrEmailOrGroup(recipient))
-      return getRecipientForNumber(context, recipient, asynchronous);
-
-    throw new RecipientFormattingException("Recipient: " + recipient + " is badly formatted.");
+    return getRecipientForNumber(context, recipient, asynchronous);
   }
 
   public static void clearCache() {

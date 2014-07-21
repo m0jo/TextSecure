@@ -17,11 +17,11 @@
 package org.thoughtcrime.securesms.recipients;
 
 import android.content.Context;
+import android.database.ContentObserver;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.provider.ContactsContract;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.PhoneLookup;
 import android.util.Log;
@@ -30,13 +30,13 @@ import org.thoughtcrime.securesms.contacts.ContactPhotoFactory;
 import org.thoughtcrime.securesms.database.CanonicalAddressDatabase;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
 import org.thoughtcrime.securesms.database.GroupDatabase;
+import org.thoughtcrime.securesms.util.BitmapUtil;
 import org.thoughtcrime.securesms.util.GroupUtil;
 import org.thoughtcrime.securesms.util.LRUCache;
-import org.whispersystems.textsecure.util.ListenableFutureTask;
 import org.thoughtcrime.securesms.util.Util;
+import org.whispersystems.textsecure.util.ListenableFutureTask;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -51,6 +51,7 @@ public class RecipientProvider {
     PhoneLookup.DISPLAY_NAME,
     PhoneLookup.LOOKUP_KEY,
     PhoneLookup._ID,
+    PhoneLookup.NUMBER
   };
 
   public Recipient getRecipient(Context context, long recipientId, boolean asynchronous) {
@@ -61,24 +62,29 @@ public class RecipientProvider {
     else                         return getSynchronousRecipient(context, recipientId);
   }
 
-  private Recipient getSynchronousRecipient(Context context, long recipientId) {
+  private Recipient getSynchronousRecipient(final Context context, final long recipientId) {
     Log.w("RecipientProvider", "Cache miss [SYNC]!");
 
-    Recipient recipient;
+    final Recipient recipient;
     RecipientDetails details;
-    String number = CanonicalAddressDatabase.getInstance(context).getAddressFromId(String.valueOf(recipientId));
+    String number = CanonicalAddressDatabase.getInstance(context).getAddressFromId(recipientId);
     final boolean isGroupRecipient = GroupUtil.isEncodedGroup(number);
 
     if (isGroupRecipient) details = getGroupRecipientDetails(context, number);
     else                  details = getRecipientDetails(context, number);
 
     if (details != null) {
-      recipient = new Recipient(details.name, number, recipientId, details.contactUri, details.avatar);
+      recipient = new Recipient(details.name, details.number, recipientId, details.contactUri, details.avatar,
+                                details.croppedAvatar);
     } else {
-      final Bitmap defaultPhoto = isGroupRecipient
-                                    ? ContactPhotoFactory.getDefaultGroupPhoto(context)
-                                    : ContactPhotoFactory.getDefaultContactPhoto(context);
-      recipient = new Recipient(null, number, recipientId, null, defaultPhoto);
+      final Bitmap defaultPhoto        = isGroupRecipient
+                                           ? ContactPhotoFactory.getDefaultGroupPhoto(context)
+                                           : ContactPhotoFactory.getDefaultContactPhoto(context);
+      final Bitmap defaultCroppedPhoto = isGroupRecipient
+                                           ? ContactPhotoFactory.getDefaultGroupPhotoCropped(context)
+                                           : ContactPhotoFactory.getDefaultContactPhotoCropped(context);
+
+      recipient = new Recipient(null, number, recipientId, null, defaultPhoto, defaultCroppedPhoto);
     }
 
     recipientCache.put(recipientId, recipient);
@@ -88,7 +94,7 @@ public class RecipientProvider {
   private Recipient getAsynchronousRecipient(final Context context, final long recipientId) {
     Log.w("RecipientProvider", "Cache miss [ASYNC]!");
 
-    final String number = CanonicalAddressDatabase.getInstance(context).getAddressFromId(String.valueOf(recipientId));
+    final String number = CanonicalAddressDatabase.getInstance(context).getAddressFromId(recipientId);
     final boolean isGroupRecipient = GroupUtil.isEncodedGroup(number);
 
     Callable<RecipientDetails> task = new Callable<RecipientDetails>() {
@@ -103,10 +109,18 @@ public class RecipientProvider {
 
     asyncRecipientResolver.submit(future);
 
-    final Bitmap defaultPhoto = isGroupRecipient
-        ? ContactPhotoFactory.getDefaultGroupPhoto(context)
-        : ContactPhotoFactory.getDefaultContactPhoto(context);
-    Recipient recipient = new Recipient(number, defaultPhoto, recipientId, future);
+    Bitmap contactPhoto;
+    Bitmap contactPhotoCropped;
+
+    if (isGroupRecipient) {
+      contactPhoto        = ContactPhotoFactory.getDefaultGroupPhoto(context);
+      contactPhotoCropped = ContactPhotoFactory.getDefaultGroupPhotoCropped(context);
+    } else {
+      contactPhoto        = ContactPhotoFactory.getDefaultContactPhoto(context);
+      contactPhotoCropped = ContactPhotoFactory.getDefaultContactPhotoCropped(context);
+    }
+
+    Recipient recipient = new Recipient(number, contactPhoto, contactPhotoCropped, recipientId, future);
     recipientCache.put(recipientId, recipient);
 
     return recipient;
@@ -131,8 +145,8 @@ public class RecipientProvider {
         Uri contactUri      = Contacts.getLookupUri(cursor.getLong(2), cursor.getString(1));
         Bitmap contactPhoto = ContactPhotoFactory.getContactPhoto(context, Uri.withAppendedPath(Contacts.CONTENT_URI,
                                                                                                 cursor.getLong(2)+""));
-
-        return new RecipientDetails(cursor.getString(0), contactUri, contactPhoto);
+        return new RecipientDetails(cursor.getString(0), cursor.getString(3), contactUri, contactPhoto,
+                                    BitmapUtil.getCircleCroppedBitmap(contactPhoto));
       }
     } finally {
       if (cursor != null)
@@ -154,7 +168,7 @@ public class RecipientProvider {
         if (avatarBytes == null) avatar = ContactPhotoFactory.getDefaultGroupPhoto(context);
         else                     avatar = BitmapFactory.decodeByteArray(avatarBytes, 0, avatarBytes.length);
 
-        return new RecipientDetails(record.getTitle(), null, avatar);
+        return new RecipientDetails(record.getTitle(), groupId, null, avatar, BitmapUtil.getCircleCroppedBitmap(avatar));
       }
 
       return null;
@@ -166,13 +180,17 @@ public class RecipientProvider {
 
   public static class RecipientDetails {
     public final String name;
+    public final String number;
     public final Bitmap avatar;
-    public final Uri contactUri;
+    public final Bitmap croppedAvatar;
+    public final Uri    contactUri;
 
-    public RecipientDetails(String name, Uri contactUri, Bitmap avatar) {
-      this.name       = name;
-      this.avatar     = avatar;
-      this.contactUri = contactUri;
+    public RecipientDetails(String name, String number, Uri contactUri, Bitmap avatar, Bitmap croppedAvatar) {
+      this.name          = name;
+      this.number        = number;
+      this.avatar        = avatar;
+      this.croppedAvatar = croppedAvatar;
+      this.contactUri    = contactUri;
     }
   }
 

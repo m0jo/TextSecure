@@ -85,7 +85,7 @@ public class MessageNotifier {
       NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
       builder.setSmallIcon(R.drawable.icon_notification);
       builder.setLargeIcon(BitmapFactory.decodeResource(context.getResources(),
-                                                        R.drawable.ic_list_alert_sms_failed));
+                                                        R.drawable.ic_action_warning_red));
       builder.setContentTitle(context.getString(R.string.MessageNotifier_message_delivery_failed));
       builder.setContentText(context.getString(R.string.MessageNotifier_failed_to_deliver_message));
       builder.setTicker(context.getString(R.string.MessageNotifier_error_delivering_message));
@@ -172,6 +172,7 @@ public class MessageNotifier {
     builder.setContentText(notifications.get(0).getText());
     builder.setContentIntent(notifications.get(0).getPendingIntent(context));
     builder.setContentInfo(String.valueOf(notificationState.getMessageCount()));
+    builder.setNumber(notificationState.getMessageCount());
 
     if (masterSecret != null) {
       builder.addAction(R.drawable.check, context.getString(R.string.MessageNotifier_mark_as_read),
@@ -215,6 +216,7 @@ public class MessageNotifier {
     builder.setContentIntent(PendingIntent.getActivity(context, 0, new Intent(context, RoutingActivity.class), 0));
     
     builder.setContentInfo(String.valueOf(notificationState.getMessageCount()));
+    builder.setNumber(notificationState.getMessageCount());
 
     if (masterSecret != null) {
       builder.addAction(R.drawable.check, context.getString(R.string.MessageNotifier_mark_all_as_read),
