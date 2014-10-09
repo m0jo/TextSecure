@@ -108,9 +108,6 @@
   <!--MessageRecord-->
   <!--PassphraseChangeActivity-->
   <string name="PassphraseChangeActivity_incorrect_old_passphrase_exclamation">العبارة السرية القديمة غير صحيحة!</string>
-  <!--PassphraseCreateActivity-->
-  <string name="PassphraseCreateActivity_passphrases_dont_match">العبارات السرية لا تتطابق</string>
-  <string name="PassphraseCreateActivity_you_must_specify_a_password">يجب أن تحدد كلمة سرية</string>
   <!--PassphrasePromptActivity-->
   <!--PromptMmsActivity-->
   <string name="PromptMmsActivity_you_must_specify_an_mmsc_url_for_your_carrier">يجب أن تحدد عنوان أو رابط لمركز رسائل الوسائط المتعددة.</string>
@@ -313,7 +310,6 @@
   <string name="AndroidManifest__change_passphrase">غير العبارة السرية</string>
   <string name="AndroidManifest__manage_identity_keys">إدارة مفاتيح الهوية</string>
   <!--arrays.xml-->
-  <string name="arrays__import_export">استيراد/تصدير</string>
   <!--preferences.xml-->
   <string name="preferences__general">عام</string>
   <string name="preferences__pref_all_sms_title">إستخدم لإستقبال كل الرسائل النصية القصيرة</string>
@@ -421,5 +417,6 @@
   <string name="text_secure_normal__menu_clear_passphrase">أقفل</string>
   <!--verify_keys-->
   <string name="verify_keys__menu_verified">تم التحقق!</string>
+  <!--reminder_header-->
   <!--EOF-->
 </resources>

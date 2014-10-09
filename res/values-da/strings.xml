@@ -109,9 +109,6 @@
   <!--MessageRecord-->
   <!--PassphraseChangeActivity-->
   <string name="PassphraseChangeActivity_incorrect_old_passphrase_exclamation">Fejl! Gammelt kodeord</string>
-  <!--PassphraseCreateActivity-->
-  <string name="PassphraseCreateActivity_passphrases_dont_match">Adgangskoderne er ikke ens</string>
-  <string name="PassphraseCreateActivity_you_must_specify_a_password">Du skal skrive et kodeord</string>
   <!--PassphrasePromptActivity-->
   <!--PromptMmsActivity-->
   <string name="PromptMmsActivity_you_must_specify_an_mmsc_url_for_your_carrier">Du skal specificere en MMSC URL for din operatør.</string>
@@ -337,7 +334,6 @@
   <string name="AndroidManifest__change_passphrase">Ændre kodeord</string>
   <string name="AndroidManifest__manage_identity_keys">Administrer ID-nøgler</string>
   <!--arrays.xml-->
-  <string name="arrays__import_export">Importer / eksporter</string>
   <!--preferences.xml-->
   <string name="preferences__general">Generelt</string>
   <string name="preferences__pref_all_sms_title">Modtag alle SMS</string>
@@ -447,5 +443,6 @@
   <string name="text_secure_normal__menu_clear_passphrase">Lås</string>
   <!--verify_keys-->
   <string name="verify_keys__menu_verified">Bekræftet</string>
+  <!--reminder_header-->
   <!--EOF-->
 </resources>

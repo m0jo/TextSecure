@@ -134,9 +134,6 @@
   <!--MessageRecord-->
   <!--PassphraseChangeActivity-->
   <string name="PassphraseChangeActivity_incorrect_old_passphrase_exclamation">Parola veche este incorectă!</string>
-  <!--PassphraseCreateActivity-->
-  <string name="PassphraseCreateActivity_passphrases_dont_match">Parolele nu sunt identice</string>
-  <string name="PassphraseCreateActivity_you_must_specify_a_password">Trebuie specificată o parolă</string>
   <!--PassphrasePromptActivity-->
   <!--PromptMmsActivity-->
   <string name="PromptMmsActivity_you_must_specify_an_mmsc_url_for_your_carrier">Trebuie sa specifici un URL MMSC pentru operatorul tau.</string>
@@ -284,9 +281,7 @@
   <!--conversation_item_sent-->
   <string name="conversation_item_sent__download">Descarca</string>
   <string name="conversation_item_sent__downloading">Se descarca</string>
-  <string name="conversation_item_sent__send_failed_indicator_description">Indicator Transmisie Eşuată</string>
   <string name="conversation_item_sent__pending_approval_description">Aprobare În Curs</string>
-  <string name="conversation_item_sent__delivered_description">Indicator Transmis</string>
   <!--conversation_item_received-->
   <string name="conversation_item_received__download">Descarca</string>
   <string name="conversation_item_received__downloading">Se descarca</string>
@@ -392,7 +387,6 @@
   <string name="AndroidManifest__change_passphrase">Schimbă parola</string>
   <string name="AndroidManifest__manage_identity_keys">Administrează cheile de identitate</string>
   <!--arrays.xml-->
-  <string name="arrays__import_export">Importă / Exportă</string>
   <!--preferences.xml-->
   <string name="preferences__general">General</string>
   <string name="preferences__push_sms_category">Push și SMS</string>
@@ -522,5 +516,6 @@
   <string name="text_secure_normal__menu_clear_passphrase">Blocare</string>
   <!--verify_keys-->
   <string name="verify_keys__menu_verified">Verificat</string>
+  <!--reminder_header-->
   <!--EOF-->
 </resources>

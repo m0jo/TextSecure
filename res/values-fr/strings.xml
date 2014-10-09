@@ -163,13 +163,10 @@
   <!--NotificationMmsMessageRecord-->
   <string name="NotificationMmsMessageRecord_multimedia_message">Message multimédia</string>
   <!--MessageRecord-->
-  <string name="MessageRecord_message_encrypted_with_a_legacy_protocol_version_that_is_no_longer_supported">Reçu un message qui es crypté par une vieux version de TextSecure, qui n\'est plus prise en charge. \nMerci de demander à l’envoyeur de mettre à jour TextSecure dans sa version la plus récente et d\'envoyer le message encore .</string>
+  <string name="MessageRecord_message_encrypted_with_a_legacy_protocol_version_that_is_no_longer_supported">Le message reçu a été chiffré via une ancienne version de TextSecure, qui n\'est plus prise en charge. \nMerci de demander à l’expéditeur de mettre à jour TextSecure dans sa version la plus récente et de renvoyer le message.</string>
   <!--PassphraseChangeActivity-->
   <string name="PassphraseChangeActivity_passphrases_dont_match_exclamation">Les phrases de passe ne correspondent pas !</string>
   <string name="PassphraseChangeActivity_incorrect_old_passphrase_exclamation">Ancienne phrase de passe incorrecte !</string>
-  <!--PassphraseCreateActivity-->
-  <string name="PassphraseCreateActivity_passphrases_dont_match">Les phrases de passe ne correspondent pas</string>
-  <string name="PassphraseCreateActivity_you_must_specify_a_password">Vous devez renseigner un mot de passe</string>
   <!--PassphrasePromptActivity-->
   <string name="PassphrasePromptActivity_enter_passphrase">Entrez la phrase de passe</string>
   <string name="PassphrasePromptActivity_watermark_content_description">Icône TextSecure</string>
@@ -347,13 +344,10 @@
   <!--conversation_item-->
   <string name="conversation_item__mms_image_description">Message média</string>
   <string name="conversation_item__play_button_description">Bouton play</string>
-  <string name="conversation_item__secure_message_description">Indicateur de Message Sécurisé</string>
   <!--conversation_item_sent-->
   <string name="conversation_item_sent__download">Télécharger</string>
   <string name="conversation_item_sent__downloading">Téléchargement</string>
-  <string name="conversation_item_sent__send_failed_indicator_description">Indicateur d\'Échec d’Envoi</string>
   <string name="conversation_item_sent__pending_approval_description">En Attente d’Acceptation</string>
-  <string name="conversation_item_sent__delivered_description">Indicateur de Réception</string>
   <!--conversation_item_received-->
   <string name="conversation_item_received__download">Télécharger</string>
   <string name="conversation_item_received__downloading">Téléchargement</string>
@@ -484,7 +478,6 @@
   <string name="AndroidManifest__complete_key_exchange">Finaliser l’échange de clés</string>
   <string name="AndroidManifest__log_submit">Soumettre un rapport de débogage</string>
   <!--arrays.xml-->
-  <string name="arrays__import_export">Importer / Exporter</string>
   <string name="arrays__my_identity_key">Ma clé d\'identité</string>
   <!--preferences.xml-->
   <string name="preferences__general">Général</string>
@@ -650,5 +643,12 @@
   <string name="text_secure_normal__mark_all_as_read">Tout marquer comme lu</string>
   <!--verify_keys-->
   <string name="verify_keys__menu_verified">Vérifié</string>
+  <!--reminder_header-->
+  <string name="reminder_header_sms_default_title">Définir  TextSecure comme application SMS par défaut? </string>
+  <string name="reminder_header_sms_default_text">TextSecure n\'est pas définis comme application SMS par défaut.</string>
+  <string name="reminder_header_sms_import_title">Désirez-vous importer les SMS du système?</string>
+  <string name="reminder_header_sms_import_text">TextSecure peut copier vos SMS au sein de sa base de donnée chiffrée. </string>
+  <string name="reminder_header_push_title">Activer les messages TextSecure?</string>
+  <string name="reminder_header_push_text">Instantané, sans frais SMS et protège votre vie privé.</string>
   <!--EOF-->
 </resources>

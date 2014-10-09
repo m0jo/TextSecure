@@ -17,56 +17,72 @@
 package org.thoughtcrime.securesms.mms;
 
 import android.content.Context;
-import android.net.http.AndroidHttpClient;
+import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.client.methods.HttpGet;
-
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import ws.com.google.android.mms.pdu.PduParser;
 import ws.com.google.android.mms.pdu.RetrieveConf;
 
 public class MmsDownloadHelper extends MmsCommunication {
+  private static final String TAG = MmsDownloadHelper.class.getSimpleName();
 
-  private static byte[] makeRequest(Context context, MmsConnectionParameters.Apn connectionParameters, String url)
+  private static byte[] makeRequest(String url, String proxy, int proxyPort)
       throws IOException
   {
-    AndroidHttpClient client = null;
+    HttpURLConnection client = null;
 
-    try {
-      client            = constructHttpClient(context, connectionParameters);
-      URI targetUrl     = new URI(url.trim());
-      HttpHost target   = new HttpHost(targetUrl.getHost(), targetUrl.getPort(), HttpHost.DEFAULT_SCHEME_NAME);
-      HttpGet request   = new HttpGet(url.trim());
+    int redirects = MAX_REDIRECTS;
+    final Set<String> previousUrls = new HashSet<String>();
+    String currentUrl = url;
+    while (redirects-- > 0) {
+      if (previousUrls.contains(currentUrl)) {
+        throw new IOException("redirect loop detected");
+      }
+      try {
+        client = constructHttpClient(currentUrl, proxy, proxyPort);
 
-      request.setParams(client.getParams());
-      request.addHeader("Accept", "*/*, application/vnd.wap.mms-message, application/vnd.wap.sic");
+        client.setDoInput(true);
+        client.setRequestMethod("GET");
+        client.setRequestProperty("Accept", "*/*, application/vnd.wap.mms-message, application/vnd.wap.sic");
 
-      HttpResponse response = client.execute(target, request);
-      StatusLine status     = response.getStatusLine();
+        Log.w(TAG, "connecting to " + currentUrl);
+        client.connect();
 
-      if (status.getStatusCode() != 200)
-        throw new IOException("Non-successful HTTP response: " + status.getReasonPhrase());
+        int responseCode = client.getResponseCode();
+        Log.w(TAG, "* response code: " + responseCode + "/" + client.getResponseMessage());
 
-      return parseResponse(response.getEntity());
-    } catch (URISyntaxException use) {
-      Log.w("MmsDownloadHelper", use);
-      throw new IOException("Couldn't parse URI");
-    } finally {
-      if (client != null)
-        client.close();
+        if (responseCode == 301 || responseCode == 302) {
+          final String redirectUrl = client.getHeaderField("Location");
+          Log.w(TAG, "* Location: " + redirectUrl);
+          if (TextUtils.isEmpty(redirectUrl)) {
+            throw new IOException("Got redirect response code, but Location header was empty or missing");
+          }
+          previousUrls.add(currentUrl);
+          currentUrl = redirectUrl;
+        } else if (responseCode == 200) {
+          final InputStream is = client.getInputStream();
+          return parseResponse(is);
+        } else {
+          throw new IOException("unhandled response code");
+        }
+      } finally {
+        if (client != null) client.disconnect();
+      }
     }
+    throw new IOException("max redirects hit");
   }
 
-  public static boolean isMmsConnectionParametersAvailable(Context context, String apn, boolean proxyIfPossible) {
+  public static boolean isMmsConnectionParametersAvailable(Context context, String apn) {
     try {
-      getMmsConnectionParameters(context, apn, proxyIfPossible);
+      getMmsConnectionParameters(context, apn);
       return true;
     } catch (ApnUnavailableException e) {
       return false;
@@ -77,13 +93,24 @@ public class MmsDownloadHelper extends MmsCommunication {
                                          boolean usingMmsRadio, boolean proxyIfPossible)
       throws IOException, ApnUnavailableException
   {
-    MmsConnectionParameters connectionParameters = getMmsConnectionParameters(context, apn, proxyIfPossible);
+    MmsConnectionParameters connectionParameters = getMmsConnectionParameters(context, apn);
     byte[] pdu = null;
 
     for (MmsConnectionParameters.Apn param : connectionParameters.get()) {
-      if (checkRouteToHost(context, param, param.getMmsc(), usingMmsRadio)) {
-        pdu = makeRequest(context, param, url);
+      try {
+        if (proxyIfPossible && param.hasProxy()) {
+          if (checkRouteToHost(context, param.getProxy(), usingMmsRadio)) {
+            pdu = makeRequest(url, param.getProxy(), param.getPort());
+          }
+        } else {
+          if (checkRouteToHost(context, Uri.parse(url).getHost(), usingMmsRadio)) {
+            pdu = makeRequest(url, null, -1);
+          }
+        }
+
         if (pdu != null) break;
+      } catch (IOException ioe) {
+        Log.w(TAG, ioe);
       }
     }
 
@@ -94,6 +121,7 @@ public class MmsDownloadHelper extends MmsCommunication {
     RetrieveConf retrieved = (RetrieveConf)new PduParser(pdu).parse();
 
     if (retrieved == null) {
+      Log.w(TAG, "Couldn't parse PDU, raw server response: " + Arrays.toString(pdu));
       throw new IOException("Bad retrieved PDU");
     }
 

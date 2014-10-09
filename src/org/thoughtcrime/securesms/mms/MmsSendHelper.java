@@ -19,19 +19,16 @@ package org.thoughtcrime.securesms.mms;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.http.AndroidHttpClient;
+import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ByteArrayEntity;
-import org.whispersystems.textsecure.util.Util;
-
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.util.HashSet;
+import java.util.Set;
 
 import ws.com.google.android.mms.pdu.PduParser;
 import ws.com.google.android.mms.pdu.SendConf;
@@ -39,43 +36,63 @@ import ws.com.google.android.mms.pdu.SendConf;
 public class MmsSendHelper extends MmsCommunication {
   private final static String TAG = MmsSendHelper.class.getSimpleName();
 
-  private static byte[] makePost(Context context, MmsConnectionParameters.Apn parameters, byte[] mms)
+  private static byte[] makePost(String url, String proxy, int proxyPort, byte[] mms)
       throws IOException
   {
-    AndroidHttpClient client = null;
+    if (mms == null) return null;
 
-    try {
-      Log.w(TAG, "Sending MMS1 of length: " + (mms != null ? mms.length : "null"));
-      client                 = constructHttpClient(context, parameters);
-      URI targetUrl          = new URI(parameters.getMmsc());
+    HttpURLConnection client = null;
 
-      if (Util.isEmpty(targetUrl.getHost()))
-        throw new IOException("Invalid target host: " + targetUrl.getHost() + " , " + targetUrl);
+    int redirects = MAX_REDIRECTS;
+    final Set<String> previousUrls = new HashSet<String>();
+    String currentUrl = url;
+    while (redirects-- > 0) {
+      if (previousUrls.contains(currentUrl)) {
+        throw new IOException("redirect loop detected");
+      }
+      try {
+        client = constructHttpClient(currentUrl, proxy, proxyPort);
+        client.setFixedLengthStreamingMode(mms.length);
+        client.setDoInput(true);
+        client.setDoOutput(true);
+        client.setRequestMethod("POST");
+        client.setRequestProperty("Content-Type", "application/vnd.wap.mms-message");
+        client.setRequestProperty("Accept", "*/*, application/vnd.wap.mms-message, application/vnd.wap.sic");
+        client.setRequestProperty("x-wap-profile", "http://www.google.com/oha/rdf/ua-profile-kila.xml");
 
-      HttpHost target        = new HttpHost(targetUrl.getHost(), targetUrl.getPort(), HttpHost.DEFAULT_SCHEME_NAME);
-      HttpPost request       = new HttpPost(parameters.getMmsc());
-      ByteArrayEntity entity = new ByteArrayEntity(mms);
+        Log.w(TAG, "connecting to " + currentUrl);
+        client.connect();
 
-      entity.setContentType("application/vnd.wap.mms-message");
+        Log.w(TAG, "* writing mms payload, " + mms.length + " bytes");
+        OutputStream out = client.getOutputStream();
+        out.write(mms);
+        out.flush();
+        out.close();
 
-      request.setEntity(entity);
-      request.setParams(client.getParams());
-      request.addHeader("Accept", "*/*, application/vnd.wap.mms-message, application/vnd.wap.sic");
-      request.addHeader("x-wap-profile", "http://www.google.com/oha/rdf/ua-profile-kila.xml");
-      HttpResponse response = client.execute(target, request);
-      StatusLine status     = response.getStatusLine();
+        Log.w(TAG, "* payload sent");
 
-      if (status.getStatusCode() != 200)
-        throw new IOException("Non-successful HTTP response: " + status.getReasonPhrase());
+        int responseCode = client.getResponseCode();
+        Log.w(TAG, "* response code: " + responseCode + "/" + client.getResponseMessage());
 
-      return parseResponse(response.getEntity());
-    } catch (URISyntaxException use) {
-      Log.w(TAG, use);
-      throw new IOException("Couldn't parse URI.");
-    } finally {
-      if (client != null)
-        client.close();
+        if (responseCode == 301 || responseCode == 302) {
+          final String redirectUrl = client.getHeaderField("Location");
+          Log.w(TAG, "* Location: " + redirectUrl);
+          if (TextUtils.isEmpty(redirectUrl)) {
+            throw new IOException("Got redirect response code, but Location header was empty or missing");
+          }
+          previousUrls.add(currentUrl);
+          currentUrl = redirectUrl;
+        } else if (responseCode == 200) {
+          final InputStream is = client.getInputStream();
+          return parseResponse(is);
+        } else {
+          throw new IOException("unhandled response code");
+        }
+      } finally {
+        if (client != null) client.disconnect();
+      }
     }
+    throw new IOException("max redirects hit");
   }
 
   public static void sendNotificationReceived(Context context, byte[] mms, String apn,
@@ -97,15 +114,28 @@ public class MmsSendHelper extends MmsCommunication {
                                   boolean usingMmsRadio, boolean useProxyIfAvailable)
     throws IOException
   {
-    Log.w(TAG, "Sending MMS of length: " + mms.length);
+    Log.w(TAG, "Sending MMS of length: " + mms.length + "." + (usingMmsRadio ? " using mms radio" : ""));
     try {
-      MmsConnectionParameters parameters = getMmsConnectionParameters(context, apn, useProxyIfAvailable);
+      MmsConnectionParameters parameters = getMmsConnectionParameters(context, apn);
+
       for (MmsConnectionParameters.Apn param : parameters.get()) {
-        if (checkRouteToHost(context, param, param.getMmsc(), usingMmsRadio)) {
-          byte[] response = makePost(context, param, mms);
-          if (response != null) return response;
+        try {
+          if (useProxyIfAvailable && param.hasProxy()) {
+            if (checkRouteToHost(context, param.getProxy(), usingMmsRadio)) {
+              byte[] response = makePost(param.getMmsc(), param.getProxy(), param.getPort(), mms);
+              if (response != null) return response;
+            }
+          } else {
+            if (checkRouteToHost(context, Uri.parse(param.getMmsc()).getHost(), usingMmsRadio)) {
+              byte[] response = makePost(param.getMmsc(), null, -1, mms);
+              if (response != null) return response;
+            }
+          }
+        } catch (IOException ioe) {
+          Log.w(TAG, ioe);
         }
       }
+
       throw new IOException("Connection manager could not obtain route to host.");
     } catch (ApnUnavailableException aue) {
       Log.w(TAG, aue);
@@ -123,7 +153,7 @@ public class MmsSendHelper extends MmsCommunication {
       }
       String apn = networkInfo.getExtraInfo();
 
-      MmsCommunication.getMmsConnectionParameters(context, apn, true);
+      MmsCommunication.getMmsConnectionParameters(context, apn);
       return true;
     } catch (ApnUnavailableException e) {
       Log.w("MmsSendHelper", e);
