@@ -37,6 +37,9 @@
     <string name="ApplicationPreferencesActivity_sms_disabled">Incoming SMS Disabled</string>
     <string name="ApplicationPreferencesActivity_touch_to_make_textsecure_your_default_sms_app">Touch to make TextSecure your default SMS app</string>
 
+    <!-- AttchmentManager -->
+    <string name="AttachmentManager_cant_open_media_selection">Can\'t find an app to select media.</string>
+
     <!-- AttachmentTypeSelectorAdapter -->
 
     <string name="AttachmentTypeSelectorAdapter_picture">Picture</string>
@@ -64,6 +67,7 @@
     <string name="ConversationItem_click_to_approve_unencrypted_sms_dialog_title">Fallback to unencrypted SMS?</string>
     <string name="ConversationItem_click_to_approve_unencrypted_mms_dialog_title">Fallback to unencrypted MMS?</string>
     <string name="ConversationItem_click_to_approve_unencrypted_dialog_message">This message will <b>not</b> be encrypted because a secure session could not be established.\n\nSend insecure message?</string>
+    <string name="ConversationItem_unable_to_open_media">Can\'t find an app able to open this media.</string>
 
     <!-- ConversationActivity -->
     <string name="ConversationActivity_initiate_secure_session_question">Initiate secure session?</string>
