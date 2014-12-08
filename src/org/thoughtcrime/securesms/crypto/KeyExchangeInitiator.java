@@ -22,22 +22,22 @@ import android.content.Context;
 import android.content.DialogInterface;
 
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.crypto.storage.TextSecureIdentityKeyStore;
+import org.thoughtcrime.securesms.crypto.storage.TextSecurePreKeyStore;
+import org.thoughtcrime.securesms.crypto.storage.TextSecureSessionStore;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.sms.MessageSender;
 import org.thoughtcrime.securesms.sms.OutgoingKeyExchangeMessage;
+import org.thoughtcrime.securesms.util.Base64;
 import org.thoughtcrime.securesms.util.Dialogs;
 import org.whispersystems.libaxolotl.SessionBuilder;
 import org.whispersystems.libaxolotl.protocol.KeyExchangeMessage;
-import org.whispersystems.libaxolotl.state.SignedPreKeyStore;
 import org.whispersystems.libaxolotl.state.IdentityKeyStore;
 import org.whispersystems.libaxolotl.state.PreKeyStore;
 import org.whispersystems.libaxolotl.state.SessionRecord;
 import org.whispersystems.libaxolotl.state.SessionStore;
-import org.whispersystems.textsecure.crypto.MasterSecret;
-import org.whispersystems.textsecure.storage.RecipientDevice;
-import org.whispersystems.textsecure.storage.TextSecurePreKeyStore;
-import org.whispersystems.textsecure.storage.TextSecureSessionStore;
-import org.whispersystems.textsecure.util.Base64;
+import org.whispersystems.libaxolotl.state.SignedPreKeyStore;
+import org.whispersystems.textsecure.api.push.PushAddress;
 
 public class KeyExchangeInitiator {
 
@@ -68,7 +68,7 @@ public class KeyExchangeInitiator {
 
     SessionBuilder    sessionBuilder    = new SessionBuilder(sessionStore, preKeyStore, signedPreKeyStore,
                                                              identityKeyStore, recipient.getRecipientId(),
-                                                             RecipientDevice.DEFAULT_DEVICE_ID);
+                                                             PushAddress.DEFAULT_DEVICE_ID);
 
     KeyExchangeMessage         keyExchangeMessage = sessionBuilder.process();
     String                     serializedMessage  = Base64.encodeBytesWithoutPadding(keyExchangeMessage.serialize());
@@ -81,7 +81,7 @@ public class KeyExchangeInitiator {
                                              Recipient recipient)
   {
     SessionStore  sessionStore  = new TextSecureSessionStore(context, masterSecret);
-    SessionRecord sessionRecord = sessionStore.loadSession(recipient.getRecipientId(), RecipientDevice.DEFAULT_DEVICE_ID);
+    SessionRecord sessionRecord = sessionStore.loadSession(recipient.getRecipientId(), PushAddress.DEFAULT_DEVICE_ID);
 
     return sessionRecord.getSessionState().hasPendingKeyExchange();
   }

@@ -20,7 +20,7 @@ import android.content.Context;
 
 import org.thoughtcrime.securesms.dom.smil.parser.SmilXmlSerializer;
 import org.thoughtcrime.securesms.util.SmilUtil;
-import org.whispersystems.textsecure.crypto.MasterSecret;
+import org.thoughtcrime.securesms.crypto.MasterSecret;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
@@ -33,7 +33,12 @@ import ws.com.google.android.mms.pdu.PduBody;
 import ws.com.google.android.mms.pdu.PduPart;
 
 public class SlideDeck {
-  private final List<Slide> slides = new LinkedList<Slide>();
+
+  private final List<Slide> slides = new LinkedList<>();
+
+  public SlideDeck(SlideDeck copy) {
+    this.slides.addAll(copy.getSlides());
+  }
 
   public SlideDeck(Context context, MasterSecret masterSecret, PduBody body) {
     try {

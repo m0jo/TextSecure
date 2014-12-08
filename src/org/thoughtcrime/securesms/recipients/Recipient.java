@@ -25,15 +25,13 @@ import android.util.Log;
 
 import org.thoughtcrime.securesms.contacts.ContactPhotoFactory;
 import org.thoughtcrime.securesms.recipients.RecipientProvider.RecipientDetails;
-import org.thoughtcrime.securesms.util.BitmapUtil;
 import org.thoughtcrime.securesms.util.GroupUtil;
-import org.whispersystems.textsecure.storage.CanonicalRecipient;
-import org.whispersystems.textsecure.util.FutureTaskListener;
-import org.whispersystems.textsecure.util.ListenableFutureTask;
+import org.thoughtcrime.securesms.util.FutureTaskListener;
+import org.thoughtcrime.securesms.util.ListenableFutureTask;
 
 import java.util.HashSet;
 
-public class Recipient implements Parcelable, CanonicalRecipient {
+public class Recipient implements Parcelable {
 
   private final static String TAG = Recipient.class.getSimpleName();
 
@@ -67,7 +65,7 @@ public class Recipient implements Parcelable, CanonicalRecipient {
     this.contactPhoto               = contactPhoto;
     this.recipientId                = recipientId;
 
-    future.setListener(new FutureTaskListener<RecipientDetails>() {
+    future.addListener(new FutureTaskListener<RecipientDetails>() {
       @Override
       public void onSuccess(RecipientDetails result) {
         if (result != null) {

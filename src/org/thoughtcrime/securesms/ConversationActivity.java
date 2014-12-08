@@ -43,6 +43,9 @@ import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextThemeWrapper;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
@@ -54,9 +57,6 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-import com.actionbarsherlock.view.MenuItem;
 import com.google.protobuf.ByteString;
 
 import org.thoughtcrime.securesms.components.EmojiDrawer;
@@ -64,7 +64,10 @@ import org.thoughtcrime.securesms.components.EmojiToggle;
 import org.thoughtcrime.securesms.contacts.ContactAccessor;
 import org.thoughtcrime.securesms.contacts.ContactAccessor.ContactData;
 import org.thoughtcrime.securesms.crypto.KeyExchangeInitiator;
-import org.thoughtcrime.securesms.crypto.KeyExchangeProcessor;
+import org.thoughtcrime.securesms.crypto.MasterCipher;
+import org.thoughtcrime.securesms.crypto.MasterSecret;
+import org.thoughtcrime.securesms.crypto.SecurityEvent;
+import org.thoughtcrime.securesms.crypto.storage.TextSecureSessionStore;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
 import org.thoughtcrime.securesms.database.DraftDatabase;
 import org.thoughtcrime.securesms.database.DraftDatabase.Draft;
@@ -102,23 +105,18 @@ import org.thoughtcrime.securesms.util.EncryptedCharacterCalculator;
 import org.thoughtcrime.securesms.util.GroupUtil;
 import org.thoughtcrime.securesms.util.MemoryCleaner;
 import org.thoughtcrime.securesms.util.TextSecurePreferences;
+import org.thoughtcrime.securesms.util.Util;
 import org.whispersystems.libaxolotl.InvalidMessageException;
 import org.whispersystems.libaxolotl.state.SessionStore;
-import org.whispersystems.textsecure.crypto.MasterCipher;
-import org.whispersystems.textsecure.crypto.MasterSecret;
-import org.whispersystems.textsecure.storage.RecipientDevice;
-import org.whispersystems.textsecure.storage.TextSecureSessionStore;
-import org.whispersystems.textsecure.util.Util;
+import org.whispersystems.textsecure.api.push.PushAddress;
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import ws.com.google.android.mms.MmsException;
-
 import static org.thoughtcrime.securesms.database.GroupDatabase.GroupRecord;
 import static org.thoughtcrime.securesms.recipients.Recipient.RecipientModifiedListener;
-import static org.whispersystems.textsecure.push.PushMessageProtos.PushMessageContent.GroupContext;
+import static org.whispersystems.textsecure.internal.push.PushMessageProtos.PushMessageContent.GroupContext;
 
 /**
  * Activity for displaying a message thread, as well as
@@ -127,7 +125,7 @@ import static org.whispersystems.textsecure.push.PushMessageProtos.PushMessageCo
  * @author Moxie Marlinspike
  *
  */
-public class ConversationActivity extends PassphraseRequiredSherlockFragmentActivity
+public class ConversationActivity extends PassphraseRequiredActionBarActivity
     implements ConversationFragment.ConversationFragmentListener,
                AttachmentManager.AttachmentListener
 {
@@ -257,7 +255,7 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
 
   @Override
   public boolean onPrepareOptionsMenu(Menu menu) {
-    MenuInflater inflater = this.getSupportMenuInflater();
+    MenuInflater inflater = this.getMenuInflater();
     menu.clear();
 
     boolean pushRegistered = TextSecurePreferences.isPushRegistered(this);
@@ -320,7 +318,7 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
       Recipient  primaryRecipient    = getRecipients() == null ? null : getRecipients().getPrimaryRecipient();
       boolean    isPushDestination   = DirectoryHelper.isPushDestination(this, getRecipients());
       boolean    isSecureDestination = isSingleConversation() && sessionStore.containsSession(primaryRecipient.getRecipientId(),
-                                                                                              RecipientDevice.DEFAULT_DEVICE_ID);
+                                                                                              PushAddress.DEFAULT_DEVICE_ID);
 
       getMenuInflater().inflate(R.menu.conversation_button_context, menu);
 
@@ -420,14 +418,22 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
       @Override
       public void onClick(DialogInterface dialog, int which) {
         if (isSingleConversation()) {
-          ConversationActivity self = ConversationActivity.this;
+          final Context context = getApplicationContext();
 
           OutgoingEndSessionMessage endSessionMessage =
               new OutgoingEndSessionMessage(new OutgoingTextMessage(getRecipients(), "TERMINATE"));
 
-          long allocatedThreadId = MessageSender.send(self, masterSecret, endSessionMessage, threadId, false);
+          new AsyncTask<OutgoingEndSessionMessage, Void, Long>() {
+            @Override
+            protected Long doInBackground(OutgoingEndSessionMessage... messages) {
+              return MessageSender.send(context, masterSecret, messages[0], threadId, false);
+            }
 
-          sendComplete(recipients, allocatedThreadId, allocatedThreadId != self.threadId);
+            @Override
+            protected void onPostExecute(Long result) {
+              sendComplete(result);
+            }
+          }.execute(endSessionMessage);
         }
       }
     });
@@ -468,9 +474,6 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
         } catch (IOException e) {
           Log.w(TAG, e);
           Toast.makeText(ConversationActivity.this, "Error leaving group....", Toast.LENGTH_LONG).show();
-        } catch (MmsException e) {
-          Log.w(TAG, e);
-          Toast.makeText(ConversationActivity.this, "Error leaving group...", Toast.LENGTH_LONG).show();
         }
       }
     });
@@ -618,10 +621,10 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
     this.getSupportActionBar().setTitle(title);
     getWindow().getDecorView().setContentDescription(getString(R.string.conversation_activity__window_description, title));
 
-    if (subtitle != null && !Util.isEmpty(subtitle))
+    if (subtitle != null && !TextUtils.isEmpty(subtitle))
       this.getSupportActionBar().setSubtitle(PhoneNumberUtils.formatNumber(subtitle));
 
-    this.invalidateOptionsMenu();
+    this.supportInvalidateOptionsMenu();
   }
 
   private void initializeDraft() {
@@ -694,7 +697,7 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
     Recipient  primaryRecipient    = getRecipients() == null ? null : getRecipients().getPrimaryRecipient();
     boolean    isPushDestination   = DirectoryHelper.isPushDestination(this, getRecipients());
     boolean    isSecureDestination = isSingleConversation() && sessionStore.containsSession(primaryRecipient.getRecipientId(),
-                                                                                            RecipientDevice.DEFAULT_DEVICE_ID);
+                                                                                            PushAddress.DEFAULT_DEVICE_ID);
 
     if (isPushDestination || isSecureDestination) {
       this.isEncryptedConversation = true;
@@ -818,7 +821,7 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
     };
 
     registerReceiver(securityUpdateReceiver,
-                     new IntentFilter(KeyExchangeProcessor.SECURITY_UPDATE_EVENT),
+                     new IntentFilter(SecurityEvent.SECURITY_UPDATE_EVENT),
                      KeyCachingService.KEY_PERMISSION, null);
 
     registerReceiver(groupUpdateReceiver,
@@ -842,12 +845,7 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
   private void addAttachmentImage(Uri imageUri) {
     try {
       attachmentManager.setImage(imageUri);
-    } catch (IOException e) {
-      Log.w(TAG, e);
-      attachmentManager.clear();
-      Toast.makeText(this, R.string.ConversationActivity_sorry_there_was_an_error_setting_your_attachment,
-                     Toast.LENGTH_LONG).show();
-    } catch (BitmapDecodingException e) {
+    } catch (IOException | BitmapDecodingException e) {
       Log.w(TAG, e);
       attachmentManager.clear();
       Toast.makeText(this, R.string.ConversationActivity_sorry_there_was_an_error_setting_your_attachment,
@@ -917,7 +915,7 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
   }
 
   private List<Draft> getDraftsForCurrentState() {
-    List<Draft> drafts = new LinkedList<Draft>();
+    List<Draft> drafts = new LinkedList<>();
 
     if (!Util.isEmpty(composeText)) {
       drafts.add(new Draft(Draft.TEXT, composeText.getText().toString()));
@@ -1032,43 +1030,42 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
     }.execute(threadId);
   }
 
-  private void sendComplete(Recipients recipients, long threadId, boolean refreshFragment) {
-    attachmentManager.clear();
-    composeText.setText("");
-
-    this.recipients = recipients;
-    this.threadId   = threadId;
+  private void sendComplete(long threadId) {
+    boolean refreshFragment = (threadId != this.threadId);
+    this.threadId = threadId;
 
     ConversationFragment fragment = (ConversationFragment) getSupportFragmentManager()
-                                                          .findFragmentById(R.id.fragment_content);
+        .findFragmentById(R.id.fragment_content);
+
+    if (fragment == null) {
+      return;
+    }
+
     if (refreshFragment) {
       fragment.reload(recipients, threadId);
 
       initializeTitleBar();
       initializeSecurity();
     }
+
     fragment.scrollToBottom();
   }
 
+
   private void sendMessage(boolean forcePlaintext, boolean forceSms) {
     try {
-      Recipients recipients = getRecipients();
+      final Recipients recipients = getRecipients();
 
       if (recipients == null)
         throw new RecipientFormattingException("Badly formatted");
 
-      long allocatedThreadId;
-
       if ((!recipients.isSingleRecipient() || recipients.isEmailRecipient()) && !isMmsEnabled) {
         handleManualMmsRequired();
-        return;
       } else if (attachmentManager.isAttachmentPresent() || !recipients.isSingleRecipient() || recipients.isGroupRecipient() || recipients.isEmailRecipient()) {
-        allocatedThreadId = sendMediaMessage(forcePlaintext, forceSms);
+        sendMediaMessage(forcePlaintext, forceSms);
       } else {
-        allocatedThreadId = sendTextMessage(forcePlaintext, forceSms);
+        sendTextMessage(forcePlaintext, forceSms);
       }
-
-      sendComplete(recipients, allocatedThreadId, allocatedThreadId != this.threadId);
     } catch (RecipientFormattingException ex) {
       Toast.makeText(ConversationActivity.this,
                      R.string.ConversationActivity_recipient_is_not_a_valid_sms_or_email_address_exclamation,
@@ -1078,17 +1075,16 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
       Toast.makeText(ConversationActivity.this, R.string.ConversationActivity_message_is_empty_exclamation,
                      Toast.LENGTH_SHORT).show();
       Log.w(TAG, ex);
-    } catch (MmsException e) {
-      Log.w(TAG, e);
     }
   }
 
-  private long sendMediaMessage(boolean forcePlaintext, boolean forceSms)
-      throws InvalidMessageException, MmsException
+  private void sendMediaMessage(boolean forcePlaintext, final boolean forceSms)
+      throws InvalidMessageException
   {
+    final Context context = getApplicationContext();
     SlideDeck slideDeck;
 
-    if (attachmentManager.isAttachmentPresent()) slideDeck = attachmentManager.getSlideDeck();
+    if (attachmentManager.isAttachmentPresent()) slideDeck = new SlideDeck(attachmentManager.getSlideDeck());
     else                                         slideDeck = new SlideDeck();
 
     OutgoingMediaMessage outgoingMessage = new OutgoingMediaMessage(this, recipients, slideDeck,
@@ -1098,12 +1094,26 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
       outgoingMessage = new OutgoingSecureMediaMessage(outgoingMessage);
     }
 
-    return MessageSender.send(this, masterSecret, outgoingMessage, threadId, forceSms);
+    attachmentManager.clear();
+    composeText.setText("");
+
+    new AsyncTask<OutgoingMediaMessage, Void, Long>() {
+      @Override
+      protected Long doInBackground(OutgoingMediaMessage... messages) {
+        return MessageSender.send(context, masterSecret, messages[0], threadId, forceSms);
+      }
+
+      @Override
+      protected void onPostExecute(Long result) {
+        sendComplete(result);
+      }
+    }.execute(outgoingMessage);
   }
 
-  private long sendTextMessage(boolean forcePlaintext, boolean forceSms)
+  private void sendTextMessage(boolean forcePlaintext, final boolean forceSms)
       throws InvalidMessageException
   {
+    final Context context = getApplicationContext();
     OutgoingTextMessage message;
 
     if (isEncryptedConversation && !forcePlaintext) {
@@ -1112,9 +1122,19 @@ public class ConversationActivity extends PassphraseRequiredSherlockFragmentActi
       message = new OutgoingTextMessage(recipients, getMessage());
     }
 
-    Log.w(TAG, "Sending message...");
+    this.composeText.setText("");
 
-    return MessageSender.send(ConversationActivity.this, masterSecret, message, threadId, forceSms);
+    new AsyncTask<OutgoingTextMessage, Void, Long>() {
+      @Override
+      protected Long doInBackground(OutgoingTextMessage... messages) {
+        return MessageSender.send(context, masterSecret, messages[0], threadId, forceSms);
+      }
+
+      @Override
+      protected void onPostExecute(Long result) {
+        sendComplete(result);
+      }
+    }.execute(message);
   }
 
 

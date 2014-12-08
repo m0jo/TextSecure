@@ -27,10 +27,12 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Editable;
-import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.util.Pair;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -38,9 +40,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-import com.actionbarsherlock.view.MenuItem;
 import com.google.protobuf.ByteString;
 
 import org.thoughtcrime.securesms.components.PushRecipientsPanel;
@@ -62,10 +61,10 @@ import org.thoughtcrime.securesms.util.GroupUtil;
 import org.thoughtcrime.securesms.util.SelectedRecipientsAdapter;
 import org.thoughtcrime.securesms.util.TextSecurePreferences;
 import org.thoughtcrime.securesms.util.Util;
-import org.whispersystems.textsecure.crypto.MasterSecret;
-import org.whispersystems.textsecure.directory.Directory;
-import org.whispersystems.textsecure.directory.NotInDirectoryException;
-import org.whispersystems.textsecure.util.InvalidNumberException;
+import org.thoughtcrime.securesms.crypto.MasterSecret;
+import org.thoughtcrime.securesms.database.TextSecureDirectory;
+import org.thoughtcrime.securesms.database.NotInDirectoryException;
+import org.whispersystems.textsecure.api.util.InvalidNumberException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -81,14 +80,14 @@ import java.util.Set;
 import ws.com.google.android.mms.MmsException;
 
 import static org.thoughtcrime.securesms.contacts.ContactAccessor.ContactData;
-import static org.whispersystems.textsecure.push.PushMessageProtos.PushMessageContent.GroupContext;
+import static org.whispersystems.textsecure.internal.push.PushMessageProtos.PushMessageContent.GroupContext;
 
 /**
  * Activity to create and update groups
  *
  * @author Jake McGinty
  */
-public class GroupCreateActivity extends PassphraseRequiredSherlockFragmentActivity {
+public class GroupCreateActivity extends PassphraseRequiredActionBarActivity {
 
   private final static String TAG = GroupCreateActivity.class.getSimpleName();
 
@@ -170,7 +169,7 @@ public class GroupCreateActivity extends PassphraseRequiredSherlockFragmentActiv
 
   private static boolean isActiveInDirectory(Context context, Recipient recipient) {
     try {
-      if (!Directory.getInstance(context).isActiveNumber(Util.canonicalizeNumber(context, recipient.getNumber()))) {
+      if (!TextSecureDirectory.getInstance(context).isActiveNumber(Util.canonicalizeNumber(context, recipient.getNumber()))) {
         return false;
       }
     } catch (NotInDirectoryException e) {
@@ -294,7 +293,7 @@ public class GroupCreateActivity extends PassphraseRequiredSherlockFragmentActiv
 
   @Override
   public boolean onPrepareOptionsMenu(Menu menu) {
-    MenuInflater inflater = this.getSupportMenuInflater();
+    MenuInflater inflater = this.getMenuInflater();
     menu.clear();
 
     inflater.inflate(R.menu.group_create, menu);
@@ -444,7 +443,7 @@ public class GroupCreateActivity extends PassphraseRequiredSherlockFragmentActiv
 
   private Pair<Long, Recipients> handlePushOperation(byte[] groupId, String groupName, byte[] avatar,
                                                      Set<String> e164numbers)
-      throws MmsException, InvalidNumberException
+      throws InvalidNumberException
   {
 
     try {
@@ -461,12 +460,9 @@ public class GroupCreateActivity extends PassphraseRequiredSherlockFragmentActiv
       OutgoingGroupMediaMessage outgoingMessage = new OutgoingGroupMediaMessage(this, groupRecipient, context, avatar);
       long                      threadId        = MessageSender.send(this, masterSecret, outgoingMessage, -1, false);
 
-      return new Pair<Long, Recipients>(threadId, groupRecipient);
+      return new Pair<>(threadId, groupRecipient);
     } catch (RecipientFormattingException e) {
       throw new AssertionError(e);
-    } catch (MmsException e) {
-      Log.w(TAG, e);
-      throw new MmsException(e);
     }
   }
 

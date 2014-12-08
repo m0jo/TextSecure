@@ -20,11 +20,21 @@ import android.app.Application;
 import android.content.Context;
 
 import org.thoughtcrime.securesms.crypto.PRNGFixes;
-import org.thoughtcrime.securesms.jobs.EncryptingJobSerializer;
+import org.thoughtcrime.securesms.dependencies.AxolotlStorageModule;
+import org.thoughtcrime.securesms.dependencies.InjectableType;
+import org.thoughtcrime.securesms.dependencies.TextSecureCommunicationModule;
 import org.thoughtcrime.securesms.jobs.GcmRefreshJob;
+import org.thoughtcrime.securesms.jobs.persistence.EncryptingJobSerializer;
+import org.thoughtcrime.securesms.jobs.requirements.MasterSecretRequirementProvider;
+import org.thoughtcrime.securesms.jobs.requirements.ServiceRequirementProvider;
 import org.thoughtcrime.securesms.util.TextSecurePreferences;
 import org.whispersystems.jobqueue.JobManager;
+import org.whispersystems.jobqueue.dependencies.DependencyInjector;
 import org.whispersystems.jobqueue.requirements.NetworkRequirementProvider;
+
+import java.security.Security;
+
+import dagger.ObjectGraph;
 
 /**
  * Will be called once when the TextSecure process is created.
@@ -34,9 +44,10 @@ import org.whispersystems.jobqueue.requirements.NetworkRequirementProvider;
  *
  * @author Moxie Marlinspike
  */
-public class ApplicationContext extends Application {
+public class ApplicationContext extends Application implements DependencyInjector {
 
   private JobManager jobManager;
+  private ObjectGraph objectGraph;
 
   public static ApplicationContext getInstance(Context context) {
     return (ApplicationContext)context.getApplicationContext();
@@ -45,22 +56,43 @@ public class ApplicationContext extends Application {
   @Override
   public void onCreate() {
     initializeRandomNumberFix();
+    initializeDependencyInjection();
     initializeJobManager();
     initializeGcmCheck();
+  }
+
+  @Override
+  public void injectDependencies(Object object) {
+    if (object instanceof InjectableType) {
+      objectGraph.inject(object);
+    }
   }
 
   public JobManager getJobManager() {
     return jobManager;
   }
 
+
   private void initializeRandomNumberFix() {
+    Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
     PRNGFixes.apply();
   }
 
   private void initializeJobManager() {
-    this.jobManager = new JobManager(this, "TextSecureJobs",
-                                     new NetworkRequirementProvider(this),
-                                     new EncryptingJobSerializer(this), 5);
+    this.jobManager = JobManager.newBuilder(this)
+                                .withName("TextSecureJobs")
+                                .withDependencyInjector(this)
+                                .withJobSerializer(new EncryptingJobSerializer())
+                                .withRequirementProviders(new MasterSecretRequirementProvider(this),
+                                                          new ServiceRequirementProvider(this),
+                                                          new NetworkRequirementProvider(this))
+                                .withConsumerThreads(5)
+                                .build();
+  }
+
+  private void initializeDependencyInjection() {
+    this.objectGraph = ObjectGraph.create(new TextSecureCommunicationModule(this),
+                                          new AxolotlStorageModule(this));
   }
 
   private void initializeGcmCheck() {

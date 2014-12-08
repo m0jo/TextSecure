@@ -10,9 +10,9 @@ import org.thoughtcrime.securesms.recipients.RecipientFactory;
 import org.thoughtcrime.securesms.recipients.RecipientFormattingException;
 import org.thoughtcrime.securesms.recipients.Recipients;
 import org.thoughtcrime.securesms.util.TextSecurePreferences;
-import org.whispersystems.textsecure.crypto.MasterSecret;
+import org.thoughtcrime.securesms.crypto.MasterSecret;
 
-public class RoutingActivity extends PassphraseRequiredSherlockActivity {
+public class RoutingActivity extends PassphraseRequiredActionBarActivity {
 
   private static final int STATE_CREATE_PASSPHRASE        = 1;
   private static final int STATE_PROMPT_PASSPHRASE        = 2;
@@ -196,7 +196,8 @@ public class RoutingActivity extends PassphraseRequiredSherlockActivity {
 
   private ConversationParameters getConversationParametersForSendAction() {
     Recipients recipients;
-    long       threadId = getIntent().getLongExtra("thread_id", -1);
+    String body     = getIntent().getStringExtra("sms_body");
+    long   threadId = getIntent().getLongExtra("thread_id", -1);
 
     try {
       String data = getIntent().getData().getSchemeSpecificPart();
@@ -206,7 +207,7 @@ public class RoutingActivity extends PassphraseRequiredSherlockActivity {
       recipients = null;
     }
 
-    return new ConversationParameters(threadId, recipients, null, null, null, null);
+    return new ConversationParameters(threadId, recipients, body, null, null, null);
   }
 
   private ConversationParameters getConversationParametersForShareAction() {

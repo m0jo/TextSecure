@@ -25,7 +25,6 @@ import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Contacts.Intents;
@@ -39,22 +38,24 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
 import org.thoughtcrime.securesms.database.MmsDatabase;
 import org.thoughtcrime.securesms.database.SmsDatabase;
 import org.thoughtcrime.securesms.database.model.MediaMmsMessageRecord;
 import org.thoughtcrime.securesms.database.model.MessageRecord;
 import org.thoughtcrime.securesms.database.model.NotificationMmsMessageRecord;
+import org.thoughtcrime.securesms.jobs.MmsDownloadJob;
+import org.thoughtcrime.securesms.jobs.MmsSendJob;
+import org.thoughtcrime.securesms.jobs.SmsSendJob;
 import org.thoughtcrime.securesms.mms.Slide;
 import org.thoughtcrime.securesms.mms.SlideDeck;
 import org.thoughtcrime.securesms.recipients.Recipient;
-import org.thoughtcrime.securesms.service.SendReceiveService;
 import org.thoughtcrime.securesms.util.DateUtils;
 import org.thoughtcrime.securesms.util.Dialogs;
 import org.thoughtcrime.securesms.util.Emoji;
-import org.whispersystems.textsecure.crypto.MasterSecret;
-import org.whispersystems.textsecure.util.FutureTaskListener;
-import org.whispersystems.textsecure.util.ListenableFutureTask;
+import org.thoughtcrime.securesms.util.FutureTaskListener;
+import org.thoughtcrime.securesms.util.ListenableFutureTask;
 
 /**
  * A view that displays an individual conversation item within a conversation
@@ -99,7 +100,7 @@ public class ConversationItem extends LinearLayout {
   private  ImageView secureImage;
   private  ImageView failedImage;
   private  ImageView contactPhoto;
-  private  ImageView deliveredImage;
+  private  ImageView deliveryImage;
   private  View      triangleTick;
   private  ImageView pendingIndicator;
 
@@ -108,6 +109,7 @@ public class ConversationItem extends LinearLayout {
   private  Button    mmsDownloadButton;
   private  TextView  mmsDownloadingLabel;
   private  ListenableFutureTask<SlideDeck> slideDeck;
+  private  FutureTaskListener<SlideDeck> slideDeckListener;
   private  TypedArray backgroundDrawables;
 
   private final FailedIconClickListener failedIconClickListener         = new FailedIconClickListener();
@@ -142,7 +144,7 @@ public class ConversationItem extends LinearLayout {
     this.mmsDownloadButton   = (Button)   findViewById(R.id.mms_download_button);
     this.mmsDownloadingLabel = (TextView) findViewById(R.id.mms_label_downloading);
     this.contactPhoto        = (ImageView)findViewById(R.id.contact_photo);
-    this.deliveredImage      = (ImageView)findViewById(R.id.delivered_indicator);
+    this.deliveryImage       = (ImageView)findViewById(R.id.delivered_indicator);
     this.conversationParent  =            findViewById(R.id.conversation_item_parent);
     this.triangleTick        =            findViewById(R.id.triangle_tick);
     this.pendingIndicator    = (ImageView)findViewById(R.id.pending_approval_indicator);
@@ -182,8 +184,8 @@ public class ConversationItem extends LinearLayout {
   }
 
   public void unbind() {
-    if (slideDeck != null)
-      slideDeck.setListener(null);
+    if (slideDeck != null && slideDeckListener != null)
+      slideDeck.removeListener(slideDeckListener);
   }
 
   public MessageRecord getMessageRecord() {
@@ -248,7 +250,7 @@ public class ConversationItem extends LinearLayout {
     }
     secureImage.setVisibility(messageRecord.isSecure() ? View.VISIBLE : View.GONE);
     bodyText.setCompoundDrawablesWithIntrinsicBounds(0, 0, messageRecord.isKeyExchange() ? R.drawable.ic_menu_login : 0, 0);
-    deliveredImage.setVisibility(!messageRecord.isKeyExchange() && messageRecord.isDelivered() ? View.VISIBLE : View.GONE);
+    deliveryImage.setVisibility(!messageRecord.isKeyExchange() && messageRecord.isDelivered() ? View.VISIBLE : View.GONE);
 
     mmsThumbnail.setVisibility(View.GONE);
     mmsDownloadButton.setVisibility(View.GONE);
@@ -345,8 +347,8 @@ public class ConversationItem extends LinearLayout {
       mmsContainer.setVisibility(View.GONE);
     }
 
-    slideDeck = messageRecord.getSlideDeck();
-    slideDeck.setListener(new FutureTaskListener<SlideDeck>() {
+    slideDeck = messageRecord.getSlideDeckFuture();
+    slideDeckListener = new FutureTaskListener<SlideDeck>() {
       @Override
       public void onSuccess(final SlideDeck result) {
         if (result == null)
@@ -377,7 +379,8 @@ public class ConversationItem extends LinearLayout {
 
       @Override
       public void onFailure(Throwable error) {}
-    });
+    };
+    slideDeck.addListener(slideDeckListener);
   }
 
   /// Helper Methods
@@ -457,18 +460,28 @@ public class ConversationItem extends LinearLayout {
     }
 
     public void onClick(View v) {
-      AlertDialog.Builder builder = new AlertDialog.Builder(context);
-      builder.setTitle(R.string.ConversationItem_view_secure_media_question);
-      builder.setIcon(Dialogs.resolveIcon(context, R.attr.dialog_alert_icon));
-      builder.setCancelable(true);
-      builder.setMessage(R.string.ConversationItem_this_media_has_been_stored_in_an_encrypted_database_external_viewer_warning);
-      builder.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-        public void onClick(DialogInterface dialog, int which) {
-          fireIntent();
-        }
-      });
-      builder.setNegativeButton(R.string.no, null);
-      builder.show();
+      if (MediaPreviewActivity.isContentTypeSupported(slide.getContentType())) {
+        Intent intent = new Intent(context, MediaPreviewActivity.class);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.setDataAndType(slide.getUri(), slide.getContentType());
+        intent.putExtra(MediaPreviewActivity.MASTER_SECRET_EXTRA, masterSecret);
+        if (!messageRecord.isOutgoing()) intent.putExtra(MediaPreviewActivity.RECIPIENT_EXTRA, messageRecord.getIndividualRecipient());
+        intent.putExtra(MediaPreviewActivity.DATE_EXTRA, messageRecord.getDateReceived());
+        context.startActivity(intent);
+      } else {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(R.string.ConversationItem_view_secure_media_question);
+        builder.setIcon(Dialogs.resolveIcon(context, R.attr.dialog_alert_icon));
+        builder.setCancelable(true);
+        builder.setMessage(R.string.ConversationItem_this_media_has_been_stored_in_an_encrypted_database_external_viewer_warning);
+        builder.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+          public void onClick(DialogInterface dialog, int which) {
+            fireIntent();
+          }
+        });
+        builder.setNegativeButton(R.string.no, null);
+        builder.show();
+      }
     }
   }
 
@@ -479,13 +492,10 @@ public class ConversationItem extends LinearLayout {
       mmsDownloadButton.setVisibility(View.GONE);
       mmsDownloadingLabel.setVisibility(View.VISIBLE);
 
-      Intent intent = new Intent(context, SendReceiveService.class);
-      intent.putExtra("content_location", new String(notificationRecord.getContentLocation()));
-      intent.putExtra("message_id", notificationRecord.getId());
-      intent.putExtra("transaction_id", notificationRecord.getTransactionId());
-      intent.putExtra("thread_id", notificationRecord.getThreadId());
-      intent.setAction(SendReceiveService.DOWNLOAD_MMS_ACTION);
-      context.startService(intent);
+      ApplicationContext.getInstance(context)
+                        .getJobManager()
+                        .add(new MmsDownloadJob(context, messageRecord.getId(),
+                                                messageRecord.getThreadId(), false));
     }
   }
 
@@ -552,6 +562,10 @@ public class ConversationItem extends LinearLayout {
           }
           database.markAsOutbox(messageRecord.getId());
           database.markAsForcedSms(messageRecord.getId());
+
+          ApplicationContext.getInstance(context)
+                            .getJobManager()
+                            .add(new MmsSendJob(context, messageRecord.getId()));
         } else {
           SmsDatabase database = DatabaseFactory.getSmsDatabase(context);
           if (messageRecord.isPendingInsecureSmsFallback()) {
@@ -559,15 +573,12 @@ public class ConversationItem extends LinearLayout {
           }
           database.markAsOutbox(messageRecord.getId());
           database.markAsForcedSms(messageRecord.getId());
+
+          ApplicationContext.getInstance(context)
+                            .getJobManager()
+                            .add(new SmsSendJob(context, messageRecord.getId(),
+                                                messageRecord.getIndividualRecipient().getNumber()));
         }
-
-        Intent intent = new Intent(context, SendReceiveService.class);
-        intent.setAction(messageRecord.isMms() ?
-                             SendReceiveService.SEND_MMS_ACTION :
-                             SendReceiveService.SEND_SMS_ACTION);
-        intent.putExtra(SendReceiveService.MASTER_SECRET_EXTRA, masterSecret);
-
-        context.startService(intent);
       }
     });
 

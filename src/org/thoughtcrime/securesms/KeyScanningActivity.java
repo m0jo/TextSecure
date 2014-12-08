@@ -18,25 +18,25 @@ package org.thoughtcrime.securesms;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.widget.Toast;
 
-import org.whispersystems.libaxolotl.IdentityKey;
-import org.whispersystems.textsecure.util.Base64;
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+
+import org.thoughtcrime.securesms.util.Base64;
 import org.thoughtcrime.securesms.util.Dialogs;
 import org.thoughtcrime.securesms.util.DynamicTheme;
-
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-import com.actionbarsherlock.view.MenuItem;
-import org.whispersystems.textsecure.zxing.integration.IntentIntegrator;
-import org.whispersystems.textsecure.zxing.integration.IntentResult;
+import org.whispersystems.libaxolotl.IdentityKey;
 
 /**
  * Activity for initiating/receiving key QR code scans.
  *
  * @author Moxie Marlinspike
  */
-public abstract class KeyScanningActivity extends PassphraseRequiredSherlockActivity {
+public abstract class KeyScanningActivity extends PassphraseRequiredActionBarActivity {
 
   private final DynamicTheme dynamicTheme = new DynamicTheme();
 
@@ -56,7 +56,7 @@ public abstract class KeyScanningActivity extends PassphraseRequiredSherlockActi
   public boolean onPrepareOptionsMenu(Menu menu) {
     super.onPrepareOptionsMenu(menu);
 
-    MenuInflater inflater = this.getSupportMenuInflater();
+    MenuInflater inflater = this.getMenuInflater();
     menu.clear();
 
     inflater.inflate(R.menu.key_scanning, menu);
@@ -99,11 +99,13 @@ public abstract class KeyScanningActivity extends PassphraseRequiredSherlockActi
   }
 
   protected void initiateScan() {
-    IntentIntegrator.initiateScan(this);
+    IntentIntegrator intentIntegrator = new IntentIntegrator(this);
+    intentIntegrator.initiateScan();
   }
 
   protected void initiateDisplay() {
-    IntentIntegrator.shareText(this, Base64.encodeBytes(getIdentityKeyToDisplay().serialize()));
+    IntentIntegrator intentIntegrator = new IntentIntegrator(this);
+    intentIntegrator.shareText(Base64.encodeBytes(getIdentityKeyToDisplay().serialize()));
   }
 
   protected abstract String getScanString();

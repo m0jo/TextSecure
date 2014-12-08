@@ -16,6 +16,7 @@
       <item>Français</item>
       <item>Greek ελληνικά</item>
       <item>Hebrew עברית</item>
+      <item>Hrvatski</item>
       <item>Indonesia</item>
       <item>Italiano</item>
       <item>Japanese 日本人</item>
@@ -28,6 +29,7 @@
       <item>Português do Brasil</item>
       <item>Român</item>
       <item>Russian Pусский</item>
+      <item>Serbian српски</item>
       <item>Slovenščina</item>
       <item>Slovenský</item>
       <item>Suomi</item>
@@ -52,11 +54,12 @@
       <item>fr</item>
       <item>el</item>
       <item>he</item>
+      <item>hr</item>
       <item>id</item>
       <item>it</item>
       <item>ja</item>
       <item>kn_IN</item>
-      <item>he</item>
+      <item>hu</item>
       <item>nl</item>
       <item>no</item>
       <item>pl</item>
@@ -64,6 +67,7 @@
       <item>pt_BR</item>
       <item>ro</item>
       <item>ru</item>
+      <item>sr</item>
       <item>sl</item>
       <item>sk</item>
       <item>fi</item>

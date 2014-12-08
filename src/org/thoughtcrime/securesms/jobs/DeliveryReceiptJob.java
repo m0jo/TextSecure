@@ -3,16 +3,25 @@ package org.thoughtcrime.securesms.jobs;
 import android.content.Context;
 import android.util.Log;
 
-import org.thoughtcrime.securesms.push.PushServiceSocketFactory;
+import org.thoughtcrime.securesms.dependencies.InjectableType;
 import org.whispersystems.jobqueue.JobParameters;
 import org.whispersystems.jobqueue.requirements.NetworkRequirement;
-import org.whispersystems.textsecure.push.PushServiceSocket;
-import org.whispersystems.textsecure.push.exceptions.NonSuccessfulResponseCodeException;
-import org.whispersystems.textsecure.push.exceptions.PushNetworkException;
+import org.whispersystems.textsecure.api.TextSecureMessageSender;
+import org.whispersystems.textsecure.api.push.PushAddress;
+import org.whispersystems.textsecure.api.push.exceptions.NonSuccessfulResponseCodeException;
+import org.whispersystems.textsecure.api.push.exceptions.PushNetworkException;
 
-public class DeliveryReceiptJob extends ContextJob {
+import java.io.IOException;
+
+import javax.inject.Inject;
+
+import static org.thoughtcrime.securesms.dependencies.TextSecureCommunicationModule.TextSecureMessageSenderFactory;
+
+public class DeliveryReceiptJob extends ContextJob implements InjectableType {
 
   private static final String TAG = DeliveryReceiptJob.class.getSimpleName();
+
+  @Inject transient TextSecureMessageSenderFactory messageSenderFactory;
 
   private final String destination;
   private final long   timestamp;
@@ -34,10 +43,12 @@ public class DeliveryReceiptJob extends ContextJob {
   public void onAdded() {}
 
   @Override
-  public void onRun() throws Throwable {
+  public void onRun() throws IOException {
     Log.w("DeliveryReceiptJob", "Sending delivery receipt...");
-    PushServiceSocket socket = PushServiceSocketFactory.create(context);
-    socket.sendReceipt(destination, timestamp, relay);
+    TextSecureMessageSender messageSender = messageSenderFactory.create(null);
+    PushAddress             pushAddress   = new PushAddress(-1, destination, 1, relay);
+
+    messageSender.sendDeliveryReceipt(pushAddress, timestamp);
   }
 
   @Override
@@ -46,10 +57,10 @@ public class DeliveryReceiptJob extends ContextJob {
   }
 
   @Override
-  public boolean onShouldRetry(Throwable throwable) {
-    Log.w(TAG, throwable);
-    if (throwable instanceof NonSuccessfulResponseCodeException) return false;
-    if (throwable instanceof PushNetworkException)               return true;
+  public boolean onShouldRetry(Exception exception) {
+    Log.w(TAG, exception);
+    if (exception instanceof NonSuccessfulResponseCodeException) return false;
+    if (exception instanceof PushNetworkException)               return true;
 
     return false;
   }

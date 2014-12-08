@@ -17,7 +17,7 @@ public class MmsRadio {
 
   public static synchronized MmsRadio getInstance(Context context) {
     if (instance == null)
-      instance = new MmsRadio(context);
+      instance = new MmsRadio(context.getApplicationContext());
 
     return instance;
   }
@@ -98,6 +98,8 @@ public class MmsRadio {
 
   private boolean isConnected() {
     NetworkInfo info = connectivityManager.getNetworkInfo(TYPE_MOBILE_MMS);
+
+    Log.w("MmsRadio", "Connected: " + info);
 
     if ((info == null) || (info.getType() != TYPE_MOBILE_MMS) || !info.isConnected())
       return false;

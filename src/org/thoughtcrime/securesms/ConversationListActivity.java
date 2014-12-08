@@ -22,26 +22,36 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.util.Log;
+import android.provider.Telephony;
+import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.widget.SearchView;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
 
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-import com.actionbarsherlock.view.MenuItem;
-
-import org.thoughtcrime.securesms.service.DirectoryRefreshListener;
+import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
 import org.thoughtcrime.securesms.notifications.MessageNotifier;
 import org.thoughtcrime.securesms.recipients.RecipientFactory;
 import org.thoughtcrime.securesms.recipients.Recipients;
+import org.thoughtcrime.securesms.service.DirectoryRefreshListener;
 import org.thoughtcrime.securesms.service.KeyCachingService;
-import org.thoughtcrime.securesms.service.SendReceiveService;
 import org.thoughtcrime.securesms.util.DynamicLanguage;
 import org.thoughtcrime.securesms.util.DynamicTheme;
 import org.thoughtcrime.securesms.util.MemoryCleaner;
 import org.thoughtcrime.securesms.util.TextSecurePreferences;
-import org.whispersystems.textsecure.crypto.MasterSecret;
 
 
-public class ConversationListActivity extends PassphraseRequiredSherlockFragmentActivity
+public class ConversationListActivity extends PassphraseRequiredActionBarActivity
     implements ConversationListFragment.ConversationSelectedListener
   {
   private final DynamicTheme    dynamicTheme    = new DynamicTheme   ();
@@ -61,7 +71,6 @@ public class ConversationListActivity extends PassphraseRequiredSherlockFragment
 
     getSupportActionBar().setTitle(R.string.app_name);
 
-    initializeSenderReceiverService();
     initializeResources();
     initializeContactUpdatesReceiver();
 
@@ -97,15 +106,43 @@ public class ConversationListActivity extends PassphraseRequiredSherlockFragment
 
   @Override
   public boolean onPrepareOptionsMenu(Menu menu) {
-    MenuInflater inflater = this.getSupportMenuInflater();
+    MenuInflater inflater = this.getMenuInflater();
     menu.clear();
 
     inflater.inflate(R.menu.text_secure_normal, menu);
 
     menu.findItem(R.id.menu_clear_passphrase).setVisible(!TextSecurePreferences.isPasswordDisabled(this));
 
+    if (this.masterSecret != null) {
+      inflater.inflate(R.menu.conversation_list, menu);
+      MenuItem menuItem = menu.findItem(R.id.menu_search);
+      SearchView searchView = (SearchView) MenuItemCompat.getActionView(menuItem);
+      initializeSearch(searchView);
+    } else {
+      inflater.inflate(R.menu.conversation_list_empty, menu);
+    }
+
     super.onPrepareOptionsMenu(menu);
     return true;
+  }
+
+  private void initializeSearch(SearchView searchView) {
+    searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+      @Override
+      public boolean onQueryTextSubmit(String query) {
+        ConversationListFragment fragment = (ConversationListFragment)getSupportFragmentManager()
+            .findFragmentById(R.id.fragment_content);
+        if (fragment != null) {
+          fragment.setQueryFilter(query);
+          return true;
+        }
+        return false;
+      }
+      @Override
+      public boolean onQueryTextChange(String newText) {
+        return onQueryTextSubmit(newText);
+      }
+    });
   }
 
   @Override
@@ -208,20 +245,11 @@ public class ConversationListActivity extends PassphraseRequiredSherlockFragment
                                                  true, observer);
   }
 
-  private void initializeSenderReceiverService() {
-    Intent smsSenderIntent = new Intent(SendReceiveService.SEND_SMS_ACTION, null, this,
-                                        SendReceiveService.class);
-    Intent mmsSenderIntent = new Intent(SendReceiveService.SEND_MMS_ACTION, null, this,
-                                        SendReceiveService.class);
-    startService(smsSenderIntent);
-    startService(mmsSenderIntent);
-  }
-
   private void initializeResources() {
     this.masterSecret = getIntent().getParcelableExtra("master_secret");
 
     this.fragment = (ConversationListFragment)this.getSupportFragmentManager()
-        .findFragmentById(R.id.fragment_content);
+                                                  .findFragmentById(R.id.fragment_content);
 
     this.fragment.setMasterSecret(masterSecret);
   }

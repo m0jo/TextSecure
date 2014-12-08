@@ -39,21 +39,21 @@ import android.util.Log;
 
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.RoutingActivity;
-import org.thoughtcrime.securesms.contacts.ContactPhotoFactory;
-import org.thoughtcrime.securesms.database.PushDatabase;
-import org.thoughtcrime.securesms.recipients.RecipientFactory;
-import org.thoughtcrime.securesms.recipients.RecipientFormattingException;
-import org.whispersystems.textsecure.crypto.MasterSecret;
+import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
 import org.thoughtcrime.securesms.database.MmsSmsDatabase;
+import org.thoughtcrime.securesms.database.PushDatabase;
 import org.thoughtcrime.securesms.database.model.MessageRecord;
 import org.thoughtcrime.securesms.recipients.Recipient;
+import org.thoughtcrime.securesms.recipients.RecipientFactory;
+import org.thoughtcrime.securesms.recipients.RecipientFormattingException;
 import org.thoughtcrime.securesms.recipients.Recipients;
 import org.thoughtcrime.securesms.util.TextSecurePreferences;
-import org.whispersystems.textsecure.push.IncomingPushMessage;
+import org.whispersystems.textsecure.api.messages.TextSecureEnvelope;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.ListIterator;
 
 /**
  * Handles posting system notifications for new messages.
@@ -181,7 +181,9 @@ public class MessageNotifier {
 
     SpannableStringBuilder content = new SpannableStringBuilder();
 
-    for (NotificationItem item : notifications) {
+    ListIterator<NotificationItem> iterator = notifications.listIterator(notifications.size());
+    while(iterator.hasPrevious()) {
+      NotificationItem item = iterator.previous();
       content.append(item.getBigStyleSummary());
       content.append('\n');
     }
@@ -225,7 +227,9 @@ public class MessageNotifier {
 
     InboxStyle style = new InboxStyle();
 
-    for (NotificationItem item : notifications) {
+    ListIterator<NotificationItem> iterator = notifications.listIterator(notifications.size());
+    while(iterator.hasPrevious()) {
+      NotificationItem item = iterator.previous();
       style.addLine(item.getTickerText());
     }
 
@@ -286,24 +290,24 @@ public class MessageNotifier {
     if (masterSecret != null) return;
 
     PushDatabase.Reader reader = null;
-    IncomingPushMessage message;
+    TextSecureEnvelope envelope;
 
     try {
       reader = DatabaseFactory.getPushDatabase(context).readerFor(cursor);
 
-      while ((message = reader.getNext()) != null) {
-        Recipient recipient;
+      while ((envelope = reader.getNext()) != null) {
+        Recipients recipients;
 
         try {
-          recipient = RecipientFactory.getRecipientsFromString(context, message.getSource(), false).getPrimaryRecipient();
+          recipients = RecipientFactory.getRecipientsFromString(context, envelope.getSource(), false);
         } catch (RecipientFormattingException e) {
           Log.w("MessageNotifier", e);
-          recipient = Recipient.getUnknownRecipient(context);
+          recipients = new Recipients(Recipient.getUnknownRecipient(context));
         }
 
-        Recipients      recipients = RecipientFactory.getRecipientsFromMessage(context, message, false);
-        long            threadId   = DatabaseFactory.getThreadDatabase(context).getThreadIdFor(recipients);
-        SpannableString body       = new SpannableString(context.getString(R.string.MessageNotifier_encrypted_message));
+        Recipient       recipient = recipients.getPrimaryRecipient();
+        long            threadId  = DatabaseFactory.getThreadDatabase(context).getThreadIdFor(recipients);
+        SpannableString body      = new SpannableString(context.getString(R.string.MessageNotifier_encrypted_message));
         body.setSpan(new StyleSpan(android.graphics.Typeface.ITALIC), 0, body.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         notificationState.addNotification(new NotificationItem(recipient, recipients, null, threadId, body, null));

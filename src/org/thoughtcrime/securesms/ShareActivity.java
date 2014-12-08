@@ -19,27 +19,23 @@ package org.thoughtcrime.securesms;
 
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.WindowManager;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-import com.actionbarsherlock.view.MenuItem;
-
+import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.recipients.Recipients;
 import org.thoughtcrime.securesms.util.DynamicLanguage;
 import org.thoughtcrime.securesms.util.DynamicTheme;
 import org.thoughtcrime.securesms.util.MemoryCleaner;
-import org.thoughtcrime.securesms.util.TextSecurePreferences;
-import org.whispersystems.textsecure.crypto.MasterSecret;
 
 /**
  * An activity to quickly share content with contacts
  *
  * @author Jake McGinty
  */
-public class ShareActivity extends PassphraseRequiredSherlockFragmentActivity
+public class ShareActivity extends PassphraseRequiredActionBarActivity
     implements ShareFragment.ConversationSelectedListener
   {
   public final static String MASTER_SECRET_EXTRA = "master_secret";
@@ -88,7 +84,7 @@ public class ShareActivity extends PassphraseRequiredSherlockFragmentActivity
 
   @Override
   public boolean onPrepareOptionsMenu(Menu menu) {
-    MenuInflater inflater = this.getSupportMenuInflater();
+    MenuInflater inflater = this.getMenuInflater();
     menu.clear();
 
     inflater.inflate(R.menu.share, menu);

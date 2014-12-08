@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools"
           package="org.thoughtcrime.securesms"
-      android:versionCode="82"
-      android:versionName="2.1.10">
+      android:versionCode="87"
+      android:versionName="2.3.3">
 
     <permission android:name="org.thoughtcrime.securesms.ACCESS_SECRETS"
                 android:label="Access to TextSecure Secrets"
@@ -114,12 +114,12 @@
               android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"/>
 
     <activity android:name=".DatabaseMigrationActivity"
-              android:theme="@style/NoAnimation.Theme.Sherlock.Light.DarkActionBar"
+              android:theme="@style/NoAnimation.Theme.AppCompat.Light.DarkActionBar"
               android:launchMode="singleTask"
               android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"/>
 
     <activity android:name=".DatabaseUpgradeActivity"
-              android:theme="@style/NoAnimation.Theme.Sherlock.Light.DarkActionBar"
+              android:theme="@style/NoAnimation.Theme.AppCompat.Light.DarkActionBar"
               android:launchMode="singleTask"
               android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"/>
 
@@ -192,6 +192,11 @@
               android:windowSoftInputMode="stateHidden"
               android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"/>
 
+    <activity android:name=".MediaPreviewActivity"
+              android:label="@string/AndroidManifest__media_preview"
+              android:windowSoftInputMode="stateHidden"
+              android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"/>
+
     <activity android:name=".DummyActivity"
               android:theme="@android:style/Theme.NoDisplay"
               android:enabled="true"
@@ -203,13 +208,14 @@
               android:clearTaskOnLaunch="true"
               android:finishOnTaskLaunch="true" />
 
-    <service android:enabled="true" android:name=".service.GcmRegistrationService"/>
+    <activity android:name=".PlayServicesProblemActivity"
+              android:theme="@android:style/Theme.Translucent.NoTitleBar"
+              android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"/>
+
     <service android:enabled="true" android:name=".service.ApplicationMigrationService"/>
     <service android:enabled="true" android:name=".service.KeyCachingService"/>
-    <service android:enabled="true" android:name=".service.SendReceiveService"/>
     <service android:enabled="true" android:name=".service.RegistrationService"/>
     <service android:enabled="true" android:name=".service.DirectoryRefreshService"/>
-    <service android:enabled="true" android:name=".service.PreKeyService"/>
 
     <service android:name=".service.QuickResponseService"
              android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE"
