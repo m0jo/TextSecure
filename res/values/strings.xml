@@ -4,11 +4,12 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="delete">Delete</string>
+    <string name="please_wait">Please wait...</string>
 
     <!-- ApplicationPreferencesActivity -->
     <string name="ApplicationPreferencesActivity_currently_s">Currently: %s</string>
     <string name="ApplicationPreferenceActivity_you_havent_set_a_passphrase_yet">You haven\'t set a passphrase yet!</string>
-    <string name="ApplicationPreferencesActivity_messages_per_conversation">messages per conversation</string>
+    <string name="ApplicationPreferencesActivity_messages_per_conversation">%s messages per conversation</string>
     <string name="ApplicationPreferencesActivity_delete_all_old_messages_now">Delete all old messages now?</string>
     <string name="ApplicationPreferencesActivity_are_you_sure_you_would_like_to_immediately_trim_all_conversation_threads_to_the_s_most_recent_messages">Are you sure you would like to immediately trim all conversation threads to the %s most recent messages?</string>
     <string name="ApplicationPreferencesActivity_delete">Delete</string>
@@ -31,6 +32,23 @@
     <string name="ApplicationPreferencesActivity_touch_to_change_your_default_sms_app">Touch to change your default SMS app</string>
     <string name="ApplicationPreferencesActivity_sms_disabled">Incoming SMS Disabled</string>
     <string name="ApplicationPreferencesActivity_touch_to_make_textsecure_your_default_sms_app">Touch to make TextSecure your default SMS app</string>
+    <string name="ApplicationPreferencesActivity_on">on</string>
+    <string name="ApplicationPreferencesActivity_On">On</string>
+    <string name="ApplicationPreferencesActivity_off">off</string>
+    <string name="ApplicationPreferencesActivity_Off">Off</string>
+    <string name="ApplicationPreferencesActivity_partial">partial</string>
+    <string name="ApplicationPreferencesActivity_sms">SMS</string>
+    <string name="ApplicationPreferencesActivity_mms">MMS</string>
+    <string name="ApplicationPreferencesActivity_incoming_sms">Incoming</string>
+    <string name="ApplicationPreferencesActivity_outgoing_sms">outgoing</string>
+
+    <!-- AppProtectionPreferenceFragment -->
+    <string name="AppProtectionPreferenceFragment_minutes">%d minutes</string>
+
+    <!-- DraftDatabase -->
+    <string name="DraftDatabase_Draft_image_snippet">(image)</string>
+    <string name="DraftDatabase_Draft_audio_snippet">(audio)</string>
+    <string name="DraftDatabase_Draft_video_snippet">(video)</string>
 
     <!-- AttchmentManager -->
     <string name="AttachmentManager_cant_open_media_selection">Can\'t find an app to select media.</string>
@@ -39,6 +57,7 @@
     <string name="AttachmentTypeSelectorAdapter_picture">Picture</string>
     <string name="AttachmentTypeSelectorAdapter_video">Video</string>
     <string name="AttachmentTypeSelectorAdapter_audio">Audio</string>
+    <string name="AttachmentTypeSelectorAdapter_contact">Contact info</string>
 
     <!-- ConversationItem -->
     <string name="ConversationItem_message_size_d_kb">Message size: %d KB</string>
@@ -51,12 +70,12 @@
     <string name="ConversationItem_group_action_left">%1$s has left the group.</string>
     <string name="ConversationItem_click_to_approve_sms">Tap for SMS fallback</string>
     <string name="ConversationItem_click_to_approve_mms">Tap for MMS fallback</string>
-    <string name="ConversationItem_click_to_approve_unencrypted">Tap for insecure fallback</string>
+    <string name="ConversationItem_click_to_approve_unencrypted">Tap for unsecured fallback</string>
     <string name="ConversationItem_click_to_approve_sms_dialog_title">Fallback to SMS?</string>
     <string name="ConversationItem_click_to_approve_mms_dialog_title">Fallback to MMS?</string>
     <string name="ConversationItem_click_to_approve_unencrypted_sms_dialog_title">Fallback to unencrypted SMS?</string>
     <string name="ConversationItem_click_to_approve_unencrypted_mms_dialog_title">Fallback to unencrypted MMS?</string>
-    <string name="ConversationItem_click_to_approve_unencrypted_dialog_message">This message will <b>not</b> be encrypted because a secure session could not be established.\n\nSend insecure message?</string>
+    <string name="ConversationItem_click_to_approve_unencrypted_dialog_message">This message will <b>not</b> be encrypted because a secure session could not be established.\n\nSend unsecured message?</string>
     <string name="ConversationItem_unable_to_open_media">Can\'t find an app able to open this media.</string>
 
     <!-- ConversationActivity -->
@@ -70,8 +89,8 @@
     <string name="ConversationActivity_select_contact_info">Select contact info</string>
     <string name="ConversationActivity_compose_message">Compose message</string>
     <string name="ConversationActivity_sorry_there_was_an_error_setting_your_attachment">Sorry, there was an error setting your attachment.</string>
-    <string name="ConversationActivity_sorry_the_selected_video_exceeds_message_size_restrictions">Sorry, the selected video exceeds message size restrictions.</string>
-    <string name="ConversationActivity_sorry_the_selected_audio_exceeds_message_size_restrictions">Sorry, the selected audio exceeds message size restrictions.</string>
+    <string name="ConversationActivity_sorry_the_selected_video_exceeds_message_size_restrictions">Sorry, the selected video exceeds message size restrictions (%1$skB).</string>
+    <string name="ConversationActivity_sorry_the_selected_audio_exceeds_message_size_restrictions">Sorry, the selected audio exceeds message size restrictions (%1$skB).</string>
     <string name="ConversationActivity_recipient_is_not_a_valid_sms_or_email_address_exclamation">Recipient is not a valid SMS or email address!</string>
     <string name="ConversationActivity_message_is_empty_exclamation">Message is empty!</string>
     <string name="ConversationActivity_group_conversation_recipients">Group conversation recipients</string>
@@ -85,13 +104,21 @@
     <string name="ConversationActivity_this_device_does_not_appear_to_support_dial_actions">This device does not appear to support dial actions.</string>
     <string name="ConversationActivity_leave_group">Leave group?</string>
     <string name="ConversationActivity_are_you_sure_you_want_to_leave_this_group">Are you sure you want to leave this group?</string>
+    <string name="ConversationActivity_transport_insecure_sms">Insecure SMS</string>
+    <string name="ConversationActivity_transport_insecure_mms">Insecure MMS</string>
+    <string name="ConversationActivity_transport_secure_sms">Secure SMS</string>
+    <string name="ConversationActivity_transport_secure_mms">Secure MMS</string>
+    <string name="ConversationActivity_transport_textsecure">TextSecure</string>
+    <string name="ConversationActivity_get_with_it">Get with it: %s</string>
+    <string name="ConversationActivity_install_textsecure">Install TextSecure: %s</string>
+    <string name="ConversationActivity_error_leaving_group">Error leaving group...</string>
 
     <!-- ConversationFragment -->
     <string name="ConversationFragment_message_details">Message details</string>
     <string name="ConversationFragment_transport_s_sent_received_s">Transport: %1$s\nSent/Received: %2$s</string>
     <string name="ConversationFragment_sender_s_transport_s_sent_s_received_s">Sender: %1$s\nTransport: %2$s\nSent: %3$s\nReceived: %4$s</string>
     <string name="ConversationFragment_confirm_message_delete">Confirm message delete</string>
-    <string name="ConversationFragment_are_you_sure_you_want_to_permanently_delete_this_message">Are you sure that you want to permanently delete this message?</string>
+    <string name="ConversationFragment_are_you_sure_you_want_to_permanently_delete_all_selected_messages">Are you sure that you want to permanently delete all selected messages?</string>
     <string name="ConversationFragment_save_to_sd_card">Save to storage?</string>
     <string name="ConversationFragment_this_media_has_been_stored_in_an_encrypted_database_warning">Saving this media to storage will allow any other apps on your phone to access it.\n\nContinue?</string>
     <string name="ConversationFragment_error_while_saving_attachment_to_sd_card">Error while saving attachment to storage!</string>
@@ -99,6 +126,12 @@
     <string name="ConversationFragment_unable_to_write_to_sd_card_exclamation">Unable to write to storage!</string>
     <string name="ConversationFragment_saving_attachment">Saving attachment</string>
     <string name="ConversationFragment_saving_attachment_to_sd_card">Saving attachment to storage...</string>
+    <string name="ConversationFragment_pending">PENDING</string>
+    <string name="ConversationFragment_push">PUSH</string>
+    <string name="ConversationFragment_mms">MMS</string>
+    <string name="ConversationFragment_sms">SMS</string>
+    <string name="ConversationFragment_deleting">Deleting...</string>
+    <string name="ConversationFragment_deleting_messages">Deleting messages...</string>
 
     <!-- ConversationListFragment -->
     <string name="ConversationListFragment_delete_threads_question">Delete threads?</string>
@@ -108,6 +141,9 @@
 
     <!-- ConversationListItem -->
     <string name="ConversationListItem_key_exchange_message">Key exchange message...</string>
+
+    <!-- DateUtils -->
+    <string name="DateUtils_now">Now</string>
 
     <!-- ShareActivity -->
     <string name="ShareActivity_share_with">Share with</string>
@@ -120,13 +156,9 @@
     </string>
     <string name="ExportFragment_cancel">Cancel</string>
     <string name="ExportFragment_exporting">Exporting</string>
-    <string name="ExportFragment_exporting_plaintext_to_sd_card">Exporting plaintext to SD card...
-    </string>
-    <string name="ExportFragment_error_unable_to_write_to_sd_card">Error, unable to write to SD
-        card!
-    </string>
-    <string name="ExportFragment_error_while_writing_to_sd_card">Error while writing to SD card.
-    </string>
+    <string name="ExportFragment_exporting_plaintext_to_sd_card">Exporting plaintext to SD card...</string>
+    <string name="ExportFragment_error_unable_to_write_to_sd_card">Error, unable to write to SD card!</string>
+    <string name="ExportFragment_error_while_writing_to_sd_card">Error while writing to SD card.</string>
     <string name="ExportFragment_success">Success!</string>
 
     <!-- GcmRefreshJob -->
@@ -146,10 +178,13 @@
     <string name="GroupCreateActivity_avatar_content_description">Group avatar</string>
     <string name="GroupCreateActivity_menu_create_title">Create group</string>
     <string name="GroupCreateActivity_creating_group">Creating %1$s&#8230;</string>
+    <string name="GroupCreateActivity_updating_group">Updating %1$s...</string>
     <string name="GroupCreateActivity_cannot_add_non_push_to_existing_group">Cannot add non-TextSecure contacts to an existing TextSecure group</string>
+    <string name="GroupCreateActivity_loading_group_details">Loading group details...</string>
 
     <!-- GroupMembersDialog -->
     <string name="GroupMembersDialog_me">Me</string>
+    <string name="GroupMembersDialog_members">Members...</string>
 
     <!-- ImportExportActivity -->
     <string name="ImportExportActivity_import">Import</string>
@@ -187,6 +222,8 @@
 
     <!-- KeyScanningActivity -->
     <string name="KeyScanningActivity_no_scanned_key_found_exclamation">No scanned key found!</string>
+    <string name="KeyScanningActivity_install_barcode_Scanner">Install Barcode Scanner?</string>
+    <string name="KeyScanningActivity_this_application_requires_barcode_scanner_would_you_like_to_install_it">TextSecure needs Barcode Scanner for QR codes.</string>
 
     <!-- MmsDownloader -->
     <string name="MmsDownloader_error_storing_mms">Error storing MMS!</string>
@@ -198,10 +235,29 @@
 
     <!-- MessageRecord -->
     <string name="MessageRecord_message_encrypted_with_a_legacy_protocol_version_that_is_no_longer_supported">Received a message encrypted using an old version of TextSecure that is no longer supported. Please ask the sender to upgrade to the most recent version and resend the message.</string>
+    <string name="MessageRecord_left_group">You have left the group.</string>
+    <string name="MessageRecord_updated_group">Updated the group.</string>
 
     <!-- PassphraseChangeActivity -->
     <string name="PassphraseChangeActivity_passphrases_dont_match_exclamation">Passphrases don\'t match!</string>
     <string name="PassphraseChangeActivity_incorrect_old_passphrase_exclamation">Incorrect old passphrase!</string>
+
+    <!-- DeviceProvisioningActivity -->
+    <string name="DeviceProvisioningActivity_link_this_device">Link this device?</string>
+    <string name="DeviceProvisioningActivity_cancel">CANCEL</string>
+    <string name="DeviceProvisioningActivity_continue">CONTINUE</string>
+    <string name="DeviceProvisioningActivity_title">Link this device?</string>
+    <string name="DeviceProvisioningActivity_content_intro">It will be able to</string>
+    <string name="DeviceProvisioningActivity_content_bullets">
+        - Read all your messages
+        \n- Send messages in your name
+    </string>
+    <string name="DeviceProvisioningActivity_content_progress_title">Adding device...</string>
+    <string name="DeviceProvisioningActivity_content_progress_content">Adding new device...</string>
+    <string name="DeviceProvisioningActivity_content_progress_success">Device added!</string>
+    <string name="DeviceProvisioningActivity_content_progress_no_device">No device found.</string>
+    <string name="DeviceProvisioningActivity_content_progress_network_error">Network error.</string>
+    <string name="DeviceProvisioningActivity_content_progress_key_error">Invalid QR code.</string>
 
     <!-- PassphrasePromptActivity -->
     <string name="PassphrasePromptActivity_enter_passphrase">Enter passphrase</string>
@@ -245,8 +301,7 @@
         require a Google account, but must have the Play Store app installed.
     </string>
     <string name="RegistrationActivity_we_will_now_verify_that_the_following_number_is_associated_with_your_device_s">
-        We will now verify that the following number is associated with this device:\n\n%s\n\n
-        Is this number correct, or would you like to edit it before continuing?
+        Double-check that this is your number! We\'re about to verify it with an SMS.
     </string>
     <string name="RegistrationActivity_continue">Continue</string>
     <string name="RegistrationActivity_edit">Edit</string>
@@ -299,6 +354,7 @@
     <!-- ThreadRecord -->
     <string name="ThreadRecord_left_the_group">Left the group...</string>
     <string name="TheadRecord_secure_session_ended">Secure session ended.</string>
+    <string name="ThreadRecord_draft">Draft:</string>
 
     <!-- VerifyIdentityActivity -->
     <string name="VerifyIdentityActivity_you_do_not_have_an_identity_key">You do not have an identity key.</string>
@@ -332,12 +388,19 @@
     <string name="MessageDisplayHelper_decrypting_please_wait">Decrypting, please wait...</string>
     <string name="MessageDisplayHelper_message_encrypted_for_non_existing_session">Message encrypted for non-existing session...</string>
 
+    <!-- EncryptingSmsDatabase -->
+    <string name="EncryptingSmsDatabase_error_decrypting_message">Error decrypting message.</string>
+
+    <!-- ThreadDatabase -->
+    <string name="ThreadDatabase_error_decrypting_message">Error decrypting message.</string>
+
     <!-- MmsDatabase -->
     <string name="MmsDatabase_connecting_to_mms_server">Connecting to MMS server...</string>
     <string name="MmsDatabase_downloading_mms">Downloading MMS...</string>
     <string name="MmsDatabase_mms_download_failed">MMS download failed!</string>
     <string name="MmsDatabase_downloading">Downloading...</string>
     <string name="MmsDatabase_mms_pending_download">Tap and configure MMS settings to continue download.</string>
+    <string name="MmsDatabase_error_decrypting_message">Error decrypting message.</string>
 
     <!-- MmsMessageRecord -->
     <string name="MmsMessageRecord_decrypting_mms_please_wait">Decrypting MMS, please wait...</string>
@@ -397,9 +460,9 @@
     <!-- conversation_activity -->
     <string name="conversation_activity__type_message_push">Send TextSecure message</string>
     <string name="conversation_activity__type_message_sms_secure">Send secure SMS</string>
-    <string name="conversation_activity__type_message_sms_insecure">Send insecure SMS</string>
+    <string name="conversation_activity__type_message_sms_insecure">Send unsecured SMS</string>
     <string name="conversation_activity__type_message_mms_secure">Send secure MMS</string>
-    <string name="conversation_activity__type_message_mms_insecure">Send insecure MMS</string>
+    <string name="conversation_activity__type_message_mms_insecure">Send unsecured MMS</string>
     <string name="conversation_activity__send">Send</string>
     <string name="conversation_activity__remove">Remove</string>
     <string name="conversation_activity__window_description">Conversation with %1$s</string>
@@ -463,8 +526,21 @@
     <string name="import_fragment__import_a_plaintext_backup_file">
         Import a plaintext backup file. Compatible with \'SMSBackup And Restore.\'</string>
 
-    <!-- mms_preferences_activity -->
-    <string name="mms_preferences_activity__manual_mms_settings_are_required">Manual MMS settings are required for your phone.</string>
+    <!-- media_overview_activity -->
+    <string name="media_overview_activity__no_images">No images</string>
+
+    <!-- MmsPreferencesFragment -->
+    <string name="MmsPreferencesFragment__manual_mms_settings_are_required">Manual MMS settings are required for your phone.</string>
+    <string name="MmsPreferencesFragment__enabled">Enabled</string>
+    <string name="MmsPreferencesFragment__disabled">Disabled</string>
+    <string name="MmsPreferencesFragment__not_set">Not set</string>
+    <string name="MmsPreferencesFragment__invalid_uri">The text entered was not a valid URI</string>
+    <string name="MmsPreferencesFragment__invalid_host">The text entered was not a valid host</string>
+
+    <!-- GroupUtil -->
+    <string name="GroupUtil_joined_the_group">%1$s joined the group.</string>
+    <string name="GroupUtil_group_updated">Group updated.</string>
+    <string name="GroupUtil_title_is_now">Title is now \'%1$s\'.</string>
 
     <!-- prompt_passphrase_activity -->
     <string name="prompt_passphrase_activity__unlock">Unlock</string>
@@ -577,12 +653,27 @@
     <string name="AndroidManifest__complete_key_exchange">Complete key exchange</string>
     <string name="AndroidManifest__log_submit">Submit debug logs</string>
     <string name="AndroidManifest__media_preview">Media Preview</string>
+    <string name="AndroidManifest__media_overview">All images</string>
+    <string name="AndroidManifest__media_overview_named">All images with %1$s</string>
 
     <!-- arrays.xml -->
     <string name="arrays__import_export">Import / export</string>
     <string name="arrays__my_identity_key">My identity key</string>
 
+    <!-- plurals.xml -->
+    <plurals name="minutes_ago">
+        <item quantity="one">%d min</item>
+        <item quantity="other">%d mins</item>
+    </plurals>
+
+    <plurals name="hours_ago">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+
     <!-- preferences.xml -->
+    <string name="preferences__general">General</string>
+    <string name="preferences__sms_mms">SMS and MMS</string>
     <string name="preferences__push_sms_category">Push and SMS</string>
     <string name="preferences__pref_all_sms_title">Receive all SMS</string>
     <string name="preferences__pref_all_mms_title">Receive all MMS</string>
@@ -599,8 +690,8 @@
     <string name="preferences__change_passphrase">Change passphrase</string>
     <string name="preferences__change_my_passphrase">Change my passphrase</string>
     <string name="preferences__complete_key_exchanges">Complete key exchanges</string>
-    <string name="preferences__disable_passphrase">Disable passphrase</string>
-    <string name="preferences__disable_local_encryption_of_messages_and_keys">Disable local encryption of messages and keys</string>
+    <string name="preferences__enable_passphrase">Enable passphrase</string>
+    <string name="preferences__enable_local_encryption_of_messages_and_keys">Enable local encryption of messages and keys</string>
     <string name="preferences__screen_security">Screen security</string>
     <string name="preferences__automatically_complete_key_exchanges_for_new_sessions_or_for_existing_sessions_with_the_same_identity_key">Automatically complete key exchanges for new sessions or for existing sessions with the same identity key</string>
     <string name="preferences__disable_screen_security_to_allow_screen_shots">Block screenshots in the recents list and inside the app</string>
@@ -612,6 +703,7 @@
     <string name="preferences__notifications">Notifications</string>
     <string name="preferences__display_message_notifications_in_status_bar">Display message notifications in status bar</string>
     <string name="preferences__led_color">LED color</string>
+    <string name="preferences__led_color_unknown">Unknown</string>
     <string name="preferences__pref_led_blink_title">LED blink pattern</string>
     <string name="preferences__pref_led_blink_custom_pattern_title">Set custom LED blink pattern</string>
     <string name="preferences__pref_led_blink_custom_pattern_on_for">On for:</string>
@@ -638,9 +730,9 @@
     <string name="preferences__slow">Slow</string>
     <string name="preferences__custom">Custom</string>
     <string name="preferences__advanced">Advanced</string>
-    <string name="preferences__passphrase">Passphrase</string>
-    <string name="preferences__advanced_mms_access_point_names">MMS preferences</string>
-    <string name="preferences__enable_manual_mms">Enable manual MMS</string>
+    <string name="preferences__app_protection">App protection</string>
+    <string name="preferences__advanced_mms_access_point_names">Manual MMS settings</string>
+    <string name="preferences__enable_manual_mms">Use manual MMS settings</string>
     <string name="preferences__override_system_mms_settings">Override system MMS settings with the information below.</string>
     <string name="preferences__mmsc_url_required">MMSC URL (Required)</string>
     <string name="preferences__mms_proxy_host_optional">MMS Proxy Host (Optional)</string>
@@ -651,12 +743,11 @@
     <string name="preferences__request_a_delivery_report_for_each_sms_message_you_send">Request a delivery report for each SMS message you send</string>
     <string name="preferences__automatically_delete_older_messages_once_a_conversation_thread_exceeds_a_specified_length">Automatically delete older messages once a conversation thread exceeds a specified length</string>
     <string name="preferences__delete_old_messages">Delete old messages</string>
-    <string name="preferences__storage">Storage</string>
     <string name="preferences__conversation_length_limit">Conversation length limit</string>
     <string name="preferences__trim_all_threads_now">Trim all threads now</string>
     <string name="preferences__scan_through_all_conversation_threads_and_enforce_conversation_length_limits">Scan through all conversation threads and enforce conversation length limits</string>
-    <string name="preferences__light_theme">Light theme</string>
-    <string name="preferences__dark_theme">Dark theme</string>
+    <string name="preferences__light_theme">Light</string>
+    <string name="preferences__dark_theme">Dark</string>
     <string name="preferences__appearance">Appearance</string>
     <string name="preferences__theme">Theme</string>
     <string name="preferences__default">Default</string>
@@ -667,14 +758,18 @@
     <string name="preferences__use_the_data_channel_for_communication_with_other_textsecure_users">
         Increase privacy and avoid SMS fees by using the data channel for communication with other TextSecure users
     </string>
-    <string name="preferences__allow_sms_fallback">Allow outgoing SMS to</string>
+    <string name="preferences__sms_fallback">Outgoing SMS/MMS</string>
     <string name="preferences__submit_debug_log">Submit debug log</string>
     <string name="preferences__sms_outgoing_push_users">TextSecure users</string>
-    <string name="preferences__sms_fallback_push_users_ask">(ask first)</string>
+    <string name="preferences__sms_fallback_push_users_ask">ask first</string>
+    <string name="preferences__sms_fallback_push_users_no_mms">no MMS</string>
     <string name="preferences__sms_outgoing_push_users_description">Send secure SMS if data connectivity is lost</string>
-    <string name="preferences__sms_fallback_ask_fallback">Ask before sending SMS</string>
+    <string name="preferences__sms_fallback_ask_before_sending_sms_mms">Ask before sending SMS/MMS</string>
+    <string name="preferences__sms_fallback_never_send_mms">Never send MMS</string>
     <string name="preferences__sms_fallback_non_push_users">Non-TextSecure users</string>
     <string name="preferences__sms_fallback_nobody">Nobody</string>
+    <string name="preferences__support_wifi_calling">\'WiFi Calling\' compatibility mode</string>
+    <string name="preferences__enable_if_your_device_supports_sms_mms_delivery_over_wifi">Enable if your device uses SMS/MMS delivery over WiFi (only enable when \'WiFi Calling\' is enabled on your device).</string>
 
     <!-- **************************************** -->
     <!-- menus -->
@@ -696,9 +791,9 @@
     <!-- conversation_button_context -->
     <string name="conversation_button_context__send_textsecure_message">Send TextSecure message</string>
     <string name="conversation_button_context__send_secure_sms">Send secure SMS</string>
-    <string name="conversation_button_context__send_insecure_sms">Send insecure SMS</string>
+    <string name="conversation_button_context__send_insecure_sms">Send unsecured SMS</string>
     <string name="conversation_button_context__send_secure_mms">Send secure MMS</string>
-    <string name="conversation_button_context__send_insecure_mms">Send insecure MMS</string>
+    <string name="conversation_button_context__send_insecure_mms">Send unsecured MMS</string>
 
     <!-- conversation_callable -->
     <string name="conversation_callable__menu_call">Call</string>
@@ -713,7 +808,7 @@
     <!-- conversation_context_image -->
     <string name="conversation_context_image__save_attachment">Save attachment</string>
 
-    <!-- conversation_insecure -->
+    <!-- conversation_insecure_no_push -->
     <string name="conversation_insecure__menu_start_secure_session">Start secure session</string>
 
     <!-- conversation_list_batch -->
@@ -732,8 +827,11 @@
     <string name="conversation__menu_add_attachment">Add attachment</string>
     <string name="conversation__menu_update_group">Update group</string>
     <string name="conversation__menu_leave_group">Leave group</string>
-    <string name="conversation__menu_add_contact_info">Add contact info</string>
     <string name="conversation__menu_delete_thread">Delete thread</string>
+    <string name="conversation__menu_view_media">All images</string>
+
+    <!-- conversation_callable -->
+    <string name="conversation_add_to_contacts__menu_add_to_contacts">Add to contacts</string>
 
     <!-- conversation_group_options -->
     <string name="convesation_group_options__recipients_list">Recipients list</string>
@@ -754,16 +852,19 @@
     <string name="text_secure_normal__mark_all_as_read">Mark all read</string>
 
     <!-- reminder_header -->
+    <string name="reminder_header_expired_build">Your build of TextSecure has expired!</string>
+    <string name="reminder_header_expired_build_details">Messages will no longer send successfully, please update to the most recent version.</string>
     <string name="reminder_header_sms_default_title">Use as default SMS app?</string>
-    <string name="reminder_header_sms_default_text">TextSecure is not currently your default SMS app.</string>
+    <string name="reminder_header_sms_default_text">Tap to make TextSecure your default SMS app.</string>
     <string name="reminder_header_sms_import_title">Import system SMS?</string>
-    <string name="reminder_header_sms_import_text">TextSecure can copy your phone\'s SMS messages into its encrypted database.</string>
+    <string name="reminder_header_sms_import_text">Tap to copy your phone\'s SMS messages into its encrypted database.</string>
     <string name="reminder_header_push_title">Enable TextSecure messages?</string>
-    <string name="reminder_header_push_text">Instant delivery, stronger privacy, and no SMS fees.</string>
+    <string name="reminder_header_push_text">Tap for instant delivery, stronger privacy, and no SMS fees.</string>
 
     <!-- MediaPreviewActivity -->
     <string name="MediaPreviewActivity_you">You</string>
     <string name="MediaPreviewActivity_cant_display">Failed to preview this image</string>
+    <string name="MediaPreviewActivity_unssuported_media_type">Unsupported media type</string>
 
     <!-- media_preview -->
     <string name="media_preview__save_title">Save</string>

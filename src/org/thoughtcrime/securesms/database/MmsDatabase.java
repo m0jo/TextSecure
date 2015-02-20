@@ -21,6 +21,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
@@ -52,7 +53,6 @@ import org.thoughtcrime.securesms.util.GroupUtil;
 import org.thoughtcrime.securesms.util.LRUCache;
 import org.thoughtcrime.securesms.util.ListenableFutureTask;
 import org.thoughtcrime.securesms.util.TextSecurePreferences;
-import org.thoughtcrime.securesms.util.Trimmer;
 import org.thoughtcrime.securesms.util.Util;
 import org.whispersystems.jobqueue.JobManager;
 import org.whispersystems.libaxolotl.InvalidMessageException;
@@ -239,7 +239,7 @@ public class MmsDatabase extends Database implements MmsSmsColumns {
     }
   }
 
-  private long getThreadIdFor(IncomingMediaMessage retrieved) throws RecipientFormattingException {
+  private long getThreadIdFor(IncomingMediaMessage retrieved) throws RecipientFormattingException, MmsException {
     if (retrieved.getGroupId() != null) {
       Recipients groupRecipients = RecipientFactory.getRecipientsFromString(context, retrieved.getGroupId(), true);
       return DatabaseFactory.getThreadDatabase(context).getThreadIdFor(groupRecipients);
@@ -252,6 +252,10 @@ public class MmsDatabase extends Database implements MmsSmsColumns {
       EncodedStringValue   encodedFrom   = headers.getEncodedStringValue(PduHeaders.FROM);
       EncodedStringValue[] encodedCcList = headers.getEncodedStringValues(PduHeaders.CC);
       EncodedStringValue[] encodedToList = headers.getEncodedStringValues(PduHeaders.TO);
+
+      if (encodedFrom == null) {
+        throw new MmsException("FROM value in PduHeaders did not exist.");
+      }
 
       group.add(new String(encodedFrom.getTextString(), CharacterSets.MIMENAME_ISO_8859_1));
 
@@ -467,7 +471,7 @@ public class MmsDatabase extends Database implements MmsSmsColumns {
       throws MmsException, NoSuchMessageException
   {
     MmsAddressDatabase addr         = DatabaseFactory.getMmsAddressDatabase(context);
-    PartDatabase       partDatabase = getPartDatabase(masterSecret);
+    PartDatabase       partDatabase = DatabaseFactory.getPartDatabase(context);
     SQLiteDatabase     database     = databaseHelper.getReadableDatabase();
     MasterCipher       masterCipher = new MasterCipher(masterSecret);
     Cursor             cursor       = null;
@@ -485,7 +489,7 @@ public class MmsDatabase extends Database implements MmsSmsColumns {
         PduHeaders headers     = getHeadersFromCursor(cursor);
         addr.getAddressesForId(messageId, headers);
 
-        PduBody body = getPartsAsBody(partDatabase.getParts(messageId, true));
+        PduBody body = getPartsAsBody(partDatabase.getParts(messageId));
 
         try {
           if (!TextUtils.isEmpty(messageText) && Types.isSymmetricEncryption(outboxType)) {
@@ -707,25 +711,25 @@ public class MmsDatabase extends Database implements MmsSmsColumns {
                                   ContentValues contentValues)
       throws MmsException
   {
-    SQLiteDatabase db                  = databaseHelper.getWritableDatabase();
-    PartDatabase partsDatabase         = getPartDatabase(masterSecret);
+    SQLiteDatabase     db              = databaseHelper.getWritableDatabase();
+    PartDatabase       partsDatabase   = DatabaseFactory.getPartDatabase(context);
     MmsAddressDatabase addressDatabase = DatabaseFactory.getMmsAddressDatabase(context);
 
     if (Types.isSymmetricEncryption(contentValues.getAsLong(MESSAGE_BOX))) {
       String messageText = PartParser.getMessageText(body);
-      body               = PartParser.getNonTextParts(body);
+      body               = PartParser.getSupportedMediaParts(body);
 
       if (!TextUtils.isEmpty(messageText)) {
         contentValues.put(BODY, new MasterCipher(masterSecret).encryptBody(messageText));
       }
     }
 
-    contentValues.put(PART_COUNT, PartParser.getDisplayablePartCount(body));
+    contentValues.put(PART_COUNT, PartParser.getSupportedMediaPartCount(body));
 
     long messageId = db.insert(TABLE_NAME, null, contentValues);
 
     addressDatabase.insertAddressesForId(messageId, headers);
-    partsDatabase.insertParts(messageId, body);
+    partsDatabase.insertParts(masterSecret, messageId, body);
 
     notifyConversationListeners(contentValues.getAsLong(THREAD_ID));
     DatabaseFactory.getThreadDatabase(context).update(contentValues.getAsLong(THREAD_ID));
@@ -894,14 +898,6 @@ public class MmsDatabase extends Database implements MmsSmsColumns {
     return cvb.getContentValues();
   }
 
-
-  protected PartDatabase getPartDatabase(MasterSecret masterSecret) {
-    if (masterSecret == null)
-      return DatabaseFactory.getPartDatabase(context);
-    else
-      return DatabaseFactory.getEncryptingPartDatabase(context, masterSecret);
-  }
-
   public Reader readerFor(MasterSecret masterSecret, Cursor cursor) {
     return new Reader(masterSecret, cursor);
   }
@@ -1054,7 +1050,7 @@ public class MmsDatabase extends Database implements MmsSmsColumns {
         }
       } catch (InvalidMessageException e) {
         Log.w("MmsDatabase", e);
-        return new DisplayRecord.Body("Error decrypting message.", true);
+        return new DisplayRecord.Body(context.getString(R.string.MmsDatabase_error_decrypting_message), true);
       }
     }
 
@@ -1073,8 +1069,9 @@ public class MmsDatabase extends Database implements MmsSmsColumns {
           if (masterSecret == null)
             return null;
 
-          PduBody   body      = getPartsAsBody(getPartDatabase(masterSecret).getParts(id, false));
-          SlideDeck slideDeck = new SlideDeck(context, masterSecret, body);
+          PartDatabase partDatabase = DatabaseFactory.getPartDatabase(context);
+          PduBody      body         = getPartsAsBody(partDatabase.getParts(id));
+          SlideDeck    slideDeck    = new SlideDeck(context, masterSecret, body);
 
           if (!body.containsPushInProgress()) {
             slideCache.put(id, new SoftReference<SlideDeck>(slideDeck));

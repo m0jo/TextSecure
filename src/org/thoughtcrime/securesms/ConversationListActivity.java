@@ -21,22 +21,13 @@ import android.database.ContentObserver;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.support.v7.app.ActionBar;
 import android.util.Log;
-import android.provider.Telephony;
-import android.support.v4.app.ActionBarDrawerToggle;
-import android.support.v4.view.GravityCompat;
 import android.support.v4.view.MenuItemCompat;
-import android.support.v4.widget.DrawerLayout;
 import android.support.v7.widget.SearchView;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.ListView;
-import android.widget.SimpleAdapter;
 
 import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
@@ -66,6 +57,8 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     dynamicTheme.onCreate(this);
     dynamicLanguage.onCreate(this);
     super.onCreate(icicle);
+
+    getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_HOME | ActionBar.DISPLAY_SHOW_TITLE);
 
     setContentView(R.layout.conversation_list_activity);
 
@@ -116,8 +109,7 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     if (this.masterSecret != null) {
       inflater.inflate(R.menu.conversation_list, menu);
       MenuItem menuItem = menu.findItem(R.id.menu_search);
-      SearchView searchView = (SearchView) MenuItemCompat.getActionView(menuItem);
-      initializeSearch(searchView);
+      initializeSearch(menuItem);
     } else {
       inflater.inflate(R.menu.conversation_list_empty, menu);
     }
@@ -126,21 +118,38 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     return true;
   }
 
-  private void initializeSearch(SearchView searchView) {
+  private void initializeSearch(MenuItem searchViewItem) {
+    SearchView searchView = (SearchView)MenuItemCompat.getActionView(searchViewItem);
     searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
       @Override
       public boolean onQueryTextSubmit(String query) {
-        ConversationListFragment fragment = (ConversationListFragment)getSupportFragmentManager()
-            .findFragmentById(R.id.fragment_content);
         if (fragment != null) {
           fragment.setQueryFilter(query);
           return true;
         }
+
         return false;
       }
+
       @Override
       public boolean onQueryTextChange(String newText) {
         return onQueryTextSubmit(newText);
+      }
+    });
+
+    MenuItemCompat.setOnActionExpandListener(searchViewItem, new MenuItemCompat.OnActionExpandListener() {
+      @Override
+      public boolean onMenuItemActionExpand(MenuItem menuItem) {
+        return true;
+      }
+
+      @Override
+      public boolean onMenuItemActionCollapse(MenuItem menuItem) {
+        if (fragment != null) {
+          fragment.resetQueryFilter();
+        }
+
+        return true;
       }
     });
   }
@@ -150,7 +159,6 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     super.onOptionsItemSelected(item);
 
     switch (item.getItemId()) {
-    case R.id.menu_new_message:       openSingleContactSelection();   return true;
     case R.id.menu_new_group:         createGroup();                  return true;
     case R.id.menu_settings:          handleDisplaySettings();        return true;
     case R.id.menu_clear_passphrase:  handleClearPassphrase();        return true;
@@ -173,15 +181,9 @@ public class ConversationListActivity extends PassphraseRequiredActionBarActivit
     startActivity(intent);
   }
 
-  private void openSingleContactSelection() {
-    Intent intent = new Intent(this, NewConversationActivity.class);
-    intent.putExtra(NewConversationActivity.MASTER_SECRET_EXTRA, masterSecret);
-    startActivity(intent);
-  }
-
   private void createConversation(long threadId, Recipients recipients, int distributionType) {
     Intent intent = new Intent(this, ConversationActivity.class);
-    intent.putExtra(ConversationActivity.RECIPIENTS_EXTRA, recipients.toIdString());
+    intent.putExtra(ConversationActivity.RECIPIENTS_EXTRA, recipients.getIds());
     intent.putExtra(ConversationActivity.THREAD_ID_EXTRA, threadId);
     intent.putExtra(ConversationActivity.MASTER_SECRET_EXTRA, masterSecret);
     intent.putExtra(ConversationActivity.DISTRIBUTION_TYPE_EXTRA, distributionType);

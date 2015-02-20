@@ -17,6 +17,8 @@
 package org.thoughtcrime.securesms.mms;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.BitmapDrawable;
@@ -29,11 +31,14 @@ import android.util.Log;
 import android.widget.ImageView;
 
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.database.DatabaseFactory;
 import org.thoughtcrime.securesms.database.MmsDatabase;
 import org.thoughtcrime.securesms.util.BitmapDecodingException;
-import org.thoughtcrime.securesms.util.BitmapUtil;
 import org.thoughtcrime.securesms.util.LRUCache;
+import org.thoughtcrime.securesms.util.MediaUtil;
+import org.thoughtcrime.securesms.util.MediaUtil.ThumbnailData;
 import org.thoughtcrime.securesms.util.SmilUtil;
+import org.thoughtcrime.securesms.util.Util;
 import org.w3c.dom.smil.SMILDocument;
 import org.w3c.dom.smil.SMILMediaElement;
 import org.w3c.dom.smil.SMILRegionElement;
@@ -41,7 +46,6 @@ import org.thoughtcrime.securesms.crypto.MasterSecret;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.Collections;
@@ -51,6 +55,7 @@ import ws.com.google.android.mms.ContentType;
 import ws.com.google.android.mms.pdu.PduPart;
 
 public class ImageSlide extends Slide {
+  private static final String TAG = ImageSlide.class.getSimpleName();
 
   private static final int MAX_CACHE_SIZE = 10;
   private static final Map<Uri, SoftReference<Drawable>> thumbnailCache =
@@ -61,7 +66,7 @@ public class ImageSlide extends Slide {
   }
 
   public ImageSlide(Context context, Uri uri) throws IOException, BitmapDecodingException {
-    super(context, constructPartFromUri(context, uri));
+    super(context, constructPartFromUri(uri));
   }
 
   @Override
@@ -77,24 +82,41 @@ public class ImageSlide extends Slide {
     }
 
     try {
-      InputStream measureStream = getPartDataInputStream();
-      InputStream dataStream    = getPartDataInputStream();
+      Bitmap thumbnailBitmap;
+      long startDecode = System.currentTimeMillis();
 
-      thumbnail = new BitmapDrawable(context.getResources(), BitmapUtil.createScaledBitmap(measureStream, dataStream, maxWidth, maxHeight));
-      thumbnailCache.put(part.getDataUri(), new SoftReference<Drawable>(thumbnail));
+      if (part.getDataUri() != null && part.getId() > -1) {
+        thumbnailBitmap = BitmapFactory.decodeStream(DatabaseFactory.getPartDatabase(context)
+                                                                    .getThumbnailStream(masterSecret, part.getId()));
+      } else if (part.getDataUri() != null) {
+        Log.w(TAG, "generating thumbnail for new part");
+        ThumbnailData thumbnailData = MediaUtil.generateThumbnail(context, masterSecret,
+                                                                  part.getDataUri(), Util.toIsoString(part.getContentType()));
+        thumbnailBitmap = thumbnailData.getBitmap();
+        part.setThumbnail(thumbnailBitmap);
+      } else {
+        throw new FileNotFoundException("no data location specified");
+      }
+
+      Log.w(TAG, "thumbnail decode/generate time: " + (System.currentTimeMillis() - startDecode) + "ms");
+
+      thumbnail = new BitmapDrawable(context.getResources(), thumbnailBitmap);
+      thumbnailCache.put(part.getDataUri(), new SoftReference<>(thumbnail));
 
       return thumbnail;
-    } catch (FileNotFoundException e) {
-      Log.w("ImageSlide", e);
-      return context.getResources().getDrawable(R.drawable.ic_missing_thumbnail_picture);
-    } catch (BitmapDecodingException e) {
-      Log.w("ImageSlide", e);
+    } catch (IOException | BitmapDecodingException e) {
+      Log.w(TAG, e);
       return context.getResources().getDrawable(R.drawable.ic_missing_thumbnail_picture);
     }
   }
 
   @Override
   public void setThumbnailOn(ImageView imageView) {
+    setThumbnailOn(imageView, imageView.getWidth(), imageView.getHeight(), new ColorDrawable(Color.TRANSPARENT));
+  }
+
+  @Override
+  public void setThumbnailOn(ImageView imageView, final int width, final int height, final Drawable placeholder) {
     Drawable thumbnail = getCachedThumbnail();
 
     if (thumbnail != null) {
@@ -103,24 +125,22 @@ public class ImageSlide extends Slide {
       return;
     }
 
-    final ColorDrawable temporaryDrawable        = new ColorDrawable(Color.TRANSPARENT);
-    final WeakReference<ImageView> weakImageView = new WeakReference<ImageView>(imageView);
+    final WeakReference<ImageView> weakImageView = new WeakReference<>(imageView);
     final Handler handler                        = new Handler();
-    final int maxWidth                           = imageView.getWidth();
-    final int maxHeight                          = imageView.getHeight();
 
-    imageView.setImageDrawable(temporaryDrawable);
+    imageView.setImageDrawable(placeholder);
 
-    if (maxWidth == 0 || maxHeight == 0)
+    if (width == 0 || height == 0)
       return;
 
     MmsDatabase.slideResolver.execute(new Runnable() {
       @Override
       public void run() {
-        final Drawable  bitmap      = getThumbnail(maxWidth, maxHeight);
+        final Drawable bitmap = getThumbnail(width, height);
         final ImageView destination = weakImageView.get();
 
-        if (destination != null && destination.getDrawable() == temporaryDrawable) {
+        Log.w(TAG, "slide resolved, destination available? " + (destination == null));
+        if (destination != null && destination.getDrawable() == placeholder) {
           handler.post(new Runnable() {
             @Override
             public void run() {
@@ -139,7 +159,7 @@ public class ImageSlide extends Slide {
       imageView.setImageDrawable(thumbnail);
       ((AnimationDrawable)imageView.getDrawable()).start();
     } else {
-      TransitionDrawable fadingResult = new TransitionDrawable(new Drawable[]{new ColorDrawable(Color.TRANSPARENT), thumbnail});
+      TransitionDrawable fadingResult = new TransitionDrawable(new Drawable[]{imageView.getDrawable(), thumbnail});
       imageView.setImageDrawable(fadingResult);
       fadingResult.startTransition(300);
     }
@@ -183,13 +203,11 @@ public class ImageSlide extends Slide {
     return SmilUtil.createMediaElement("img", document, new String(getPart().getName()));
   }
 
-  private static PduPart constructPartFromUri(Context context, Uri uri)
+  private static PduPart constructPartFromUri(Uri uri)
       throws IOException, BitmapDecodingException
   {
     PduPart part = new PduPart();
-    byte[] data  = BitmapUtil.createScaledBytes(context, uri, 1280, 1280, MAX_MESSAGE_SIZE);
 
-    part.setData(data);
     part.setDataUri(uri);
     part.setContentType(ContentType.IMAGE_JPEG.getBytes());
     part.setContentId((System.currentTimeMillis()+"").getBytes());

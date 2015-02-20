@@ -3,8 +3,11 @@ package org.thoughtcrime.securesms.jobs;
 import android.content.Context;
 import android.util.Log;
 
+import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.database.DatabaseFactory;
+import org.thoughtcrime.securesms.database.TextSecureDirectory;
 import org.thoughtcrime.securesms.jobs.requirements.MasterSecretRequirement;
+import org.thoughtcrime.securesms.mms.PartAuthority;
 import org.thoughtcrime.securesms.notifications.MessageNotifier;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.Recipients;
@@ -15,18 +18,19 @@ import org.whispersystems.jobqueue.JobParameters;
 import org.whispersystems.jobqueue.requirements.NetworkRequirement;
 import org.whispersystems.textsecure.api.messages.TextSecureAttachment;
 import org.whispersystems.textsecure.api.messages.TextSecureAttachmentStream;
-import org.thoughtcrime.securesms.database.TextSecureDirectory;
 import org.whispersystems.textsecure.api.push.PushAddress;
 import org.whispersystems.textsecure.api.util.InvalidNumberException;
 
-import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
 
 import ws.com.google.android.mms.ContentType;
+import ws.com.google.android.mms.pdu.PduPart;
 import ws.com.google.android.mms.pdu.SendReq;
 
-public abstract class PushSendJob extends MasterSecretJob {
+public abstract class PushSendJob extends SendJob {
 
   private static final String TAG = PushSendJob.class.getSimpleName();
 
@@ -34,13 +38,13 @@ public abstract class PushSendJob extends MasterSecretJob {
     super(context, parameters);
   }
 
-  protected static JobParameters constructParameters(Context context, String destination) {
+  protected static JobParameters constructParameters(Context context, String destination, boolean media) {
     JobParameters.Builder builder = JobParameters.newBuilder();
     builder.withPersistence();
     builder.withGroupId(destination);
     builder.withRequirement(new MasterSecretRequirement(context));
 
-    if (!isSmsFallbackSupported(context, destination)) {
+    if (!isSmsFallbackSupported(context, destination, media)) {
       builder.withRequirement(new NetworkRequirement(context));
       builder.withRetryCount(5);
     }
@@ -48,7 +52,7 @@ public abstract class PushSendJob extends MasterSecretJob {
     return builder.create();
   }
 
-  protected static boolean isSmsFallbackSupported(Context context, String destination) {
+  protected static boolean isSmsFallbackSupported(Context context, String destination, boolean media) {
     try {
       String e164number = Util.canonicalizeNumber(context, destination);
 
@@ -57,6 +61,10 @@ public abstract class PushSendJob extends MasterSecretJob {
       }
 
       if (!TextSecurePreferences.isFallbackSmsAllowed(context)) {
+        return false;
+      }
+
+      if (media && !TextSecurePreferences.isFallbackMmsEnabled(context)) {
         return false;
       }
 
@@ -71,25 +79,30 @@ public abstract class PushSendJob extends MasterSecretJob {
   protected PushAddress getPushAddress(Recipient recipient) throws InvalidNumberException {
     String e164number = Util.canonicalizeNumber(context, recipient.getNumber());
     String relay      = TextSecureDirectory.getInstance(context).getRelay(e164number);
-    return new PushAddress(recipient.getRecipientId(), e164number, 1, relay);
+    return new PushAddress(recipient.getRecipientId(), e164number, relay);
   }
 
-  protected boolean isSmsFallbackApprovalRequired(String destination) {
-    return (isSmsFallbackSupported(context, destination) && TextSecurePreferences.isFallbackSmsAskRequired(context));
+  protected boolean isSmsFallbackApprovalRequired(String destination, boolean media) {
+    return (isSmsFallbackSupported(context, destination, media) && TextSecurePreferences.isFallbackSmsAskRequired(context));
   }
 
-  protected List<TextSecureAttachment> getAttachments(SendReq message) {
+  protected List<TextSecureAttachment> getAttachments(final MasterSecret masterSecret, final SendReq message) {
     List<TextSecureAttachment> attachments = new LinkedList<>();
 
     for (int i=0;i<message.getBody().getPartsNum();i++) {
-      String contentType = Util.toIsoString(message.getBody().getPart(i).getContentType());
+      PduPart part = message.getBody().getPart(i);
+      String contentType = Util.toIsoString(part.getContentType());
       if (ContentType.isImageType(contentType) ||
           ContentType.isAudioType(contentType) ||
           ContentType.isVideoType(contentType))
       {
-        byte[] data = message.getBody().getPart(i).getData();
-        Log.w(TAG, "Adding attachment...");
-        attachments.add(new TextSecureAttachmentStream(new ByteArrayInputStream(data), contentType, data.length));
+
+        try {
+          InputStream is = PartAuthority.getPartStream(context, masterSecret, part.getDataUri());
+          attachments.add(new TextSecureAttachmentStream(is, contentType, part.getDataSize()));
+        } catch (IOException ioe) {
+          Log.w(TAG, "Couldn't open attachment", ioe);
+        }
       }
     }
 

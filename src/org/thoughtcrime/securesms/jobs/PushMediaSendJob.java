@@ -10,6 +10,7 @@ import org.thoughtcrime.securesms.database.DatabaseFactory;
 import org.thoughtcrime.securesms.database.MmsDatabase;
 import org.thoughtcrime.securesms.database.NoSuchMessageException;
 import org.thoughtcrime.securesms.dependencies.InjectableType;
+import org.thoughtcrime.securesms.mms.MediaConstraints;
 import org.thoughtcrime.securesms.mms.PartParser;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientFactory;
@@ -19,6 +20,7 @@ import org.thoughtcrime.securesms.sms.IncomingIdentityUpdateMessage;
 import org.thoughtcrime.securesms.transport.InsecureFallbackApprovalException;
 import org.thoughtcrime.securesms.transport.RetryLaterException;
 import org.thoughtcrime.securesms.transport.SecureFallbackApprovalException;
+import org.thoughtcrime.securesms.transport.UndeliverableMessageException;
 import org.whispersystems.libaxolotl.state.AxolotlStore;
 import org.whispersystems.textsecure.api.TextSecureMessageSender;
 import org.whispersystems.textsecure.api.crypto.UntrustedIdentityException;
@@ -47,7 +49,7 @@ public class PushMediaSendJob extends PushSendJob implements InjectableType {
   private final long messageId;
 
   public PushMediaSendJob(Context context, long messageId, String destination) {
-    super(context, constructParameters(context, destination));
+    super(context, constructParameters(context, destination, true));
     this.messageId = messageId;
   }
 
@@ -57,8 +59,8 @@ public class PushMediaSendJob extends PushSendJob implements InjectableType {
   }
 
   @Override
-  public void onRun(MasterSecret masterSecret)
-      throws RetryLaterException, MmsException, NoSuchMessageException
+  public void onSend(MasterSecret masterSecret)
+      throws RetryLaterException, MmsException, NoSuchMessageException, UndeliverableMessageException
   {
     MmsDatabase database = DatabaseFactory.getMmsDatabase(context);
     SendReq     message  = database.getOutgoingMessage(masterSecret, messageId);
@@ -99,17 +101,19 @@ public class PushMediaSendJob extends PushSendJob implements InjectableType {
 
   private boolean deliver(MasterSecret masterSecret, SendReq message)
       throws RetryLaterException, SecureFallbackApprovalException,
-             InsecureFallbackApprovalException, UntrustedIdentityException
+             InsecureFallbackApprovalException, UntrustedIdentityException,
+             UndeliverableMessageException
   {
     MmsDatabase             database               = DatabaseFactory.getMmsDatabase(context);
     TextSecureMessageSender messageSender          = messageSenderFactory.create(masterSecret);
     String                  destination            = message.getTo()[0].getString();
-    boolean                 isSmsFallbackSupported = isSmsFallbackSupported(context, destination);
+    boolean                 isSmsFallbackSupported = isSmsFallbackSupported(context, destination, true);
 
     try {
+      prepareMessageMedia(masterSecret, message, MediaConstraints.PUSH_CONSTRAINTS, false);
       Recipients                 recipients   = RecipientFactory.getRecipientsFromString(context, destination, false);
       PushAddress                address      = getPushAddress(recipients.getPrimaryRecipient());
-      List<TextSecureAttachment> attachments  = getAttachments(message);
+      List<TextSecureAttachment> attachments  = getAttachments(masterSecret, message);
       String                     body         = PartParser.getMessageText(message.getBody());
       TextSecureMessage          mediaMessage = new TextSecureMessage(message.getSentTimestamp(), attachments, body);
 
@@ -132,7 +136,7 @@ public class PushMediaSendJob extends PushSendJob implements InjectableType {
   {
     try {
       Recipient    recipient                     = RecipientFactory.getRecipientsFromString(context, destination, false).getPrimaryRecipient();
-      boolean      isSmsFallbackApprovalRequired = isSmsFallbackApprovalRequired(destination);
+      boolean      isSmsFallbackApprovalRequired = isSmsFallbackApprovalRequired(destination, true);
       AxolotlStore axolotlStore                  = new TextSecureAxolotlStore(context, masterSecret);
 
       if (!isSmsFallbackApprovalRequired) {

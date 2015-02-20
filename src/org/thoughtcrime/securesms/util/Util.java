@@ -32,8 +32,10 @@ import android.text.TextUtils;
 import android.text.style.StyleSpan;
 import android.widget.EditText;
 
-import org.whispersystems.textsecure.api.util.PhoneNumberFormatter;
+import org.thoughtcrime.securesms.BuildConfig;
+import org.thoughtcrime.securesms.TextSecureExpiredException;
 import org.whispersystems.textsecure.api.util.InvalidNumberException;
+import org.whispersystems.textsecure.api.util.PhoneNumberFormatter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -146,7 +148,7 @@ public class Util {
     else                                  return canonicalizeNumber(context, number);
   }
 
-  public static String readFully(InputStream in) throws IOException {
+  public static byte[] readFully(InputStream in) throws IOException {
     ByteArrayOutputStream bout = new ByteArrayOutputStream();
     byte[] buffer              = new byte[4096];
     int read;
@@ -157,19 +159,27 @@ public class Util {
 
     in.close();
 
-    return new String(bout.toByteArray());
+    return bout.toByteArray();
   }
 
-  public static void copy(InputStream in, OutputStream out) throws IOException {
+  public static String readFullyAsString(InputStream in) throws IOException {
+    return new String(readFully(in));
+  }
+
+  public static long copy(InputStream in, OutputStream out) throws IOException {
     byte[] buffer = new byte[4096];
     int read;
+    long total = 0;
 
     while ((read = in.read(buffer)) != -1) {
       out.write(buffer, 0, read);
+      total += read;
     }
 
     in.close();
     out.close();
+
+    return total;
   }
 
   public static String getDeviceE164Number(Context context) {
@@ -266,20 +276,7 @@ public class Util {
     }
   }
 
-
-  /*
-   * source: http://stackoverflow.com/a/9500334
-   */
-  public static void fixBackgroundRepeat(Drawable bg) {
-    if (bg != null) {
-      if (bg instanceof BitmapDrawable) {
-        BitmapDrawable bmp = (BitmapDrawable) bg;
-        bmp.mutate();
-        bmp.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-      }
-    }
+  public static boolean isBuildFresh() {
+    return BuildConfig.BUILD_TIMESTAMP + TimeUnit.DAYS.toMillis(180) > System.currentTimeMillis();
   }
-
-
-
 }

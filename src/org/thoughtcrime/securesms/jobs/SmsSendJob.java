@@ -15,6 +15,7 @@ import org.thoughtcrime.securesms.database.EncryptingSmsDatabase;
 import org.thoughtcrime.securesms.database.NoSuchMessageException;
 import org.thoughtcrime.securesms.database.model.SmsMessageRecord;
 import org.thoughtcrime.securesms.jobs.requirements.MasterSecretRequirement;
+import org.thoughtcrime.securesms.jobs.requirements.NetworkOrServiceRequirement;
 import org.thoughtcrime.securesms.jobs.requirements.ServiceRequirement;
 import org.thoughtcrime.securesms.notifications.MessageNotifier;
 import org.thoughtcrime.securesms.recipients.Recipients;
@@ -30,20 +31,14 @@ import org.whispersystems.libaxolotl.NoSessionException;
 
 import java.util.ArrayList;
 
-public class SmsSendJob extends MasterSecretJob {
+public class SmsSendJob extends SendJob {
 
   private static final String TAG = SmsSendJob.class.getSimpleName();
 
   private final long messageId;
 
   public SmsSendJob(Context context, long messageId, String name) {
-    super(context, JobParameters.newBuilder()
-                                .withPersistence()
-                                .withRequirement(new MasterSecretRequirement(context))
-                                .withRequirement(new ServiceRequirement(context))
-                                .withGroupId(name)
-                                .create());
-
+    super(context, constructParameters(context, name));
     this.messageId = messageId;
   }
 
@@ -53,7 +48,7 @@ public class SmsSendJob extends MasterSecretJob {
   }
 
   @Override
-  public void onRun(MasterSecret masterSecret) throws NoSuchMessageException {
+  public void onSend(MasterSecret masterSecret) throws NoSuchMessageException {
     EncryptingSmsDatabase database = DatabaseFactory.getEncryptingSmsDatabase(context);
     SmsMessageRecord      record   = database.getMessage(masterSecret, messageId);
 
@@ -105,7 +100,7 @@ public class SmsSendJob extends MasterSecretJob {
       throws UndeliverableMessageException, InsecureFallbackApprovalException
   {
     MultipartSmsMessageHandler multipartMessageHandler = new MultipartSmsMessageHandler();
-    OutgoingTextMessage transportMessage               = OutgoingTextMessage.from(message);
+    OutgoingTextMessage        transportMessage        = OutgoingTextMessage.from(message);
 
     if (message.isSecure() || message.isEndSession()) {
       transportMessage = getAsymmetricEncrypt(masterSecret, transportMessage);
@@ -227,7 +222,7 @@ public class SmsSendJob extends MasterSecretJob {
     return pending;
   }
 
-  protected Intent constructDeliveredIntent(Context context, long messageId, long type) {
+  private Intent constructDeliveredIntent(Context context, long messageId, long type) {
     Intent pending = new Intent(SmsDeliveryListener.DELIVERED_SMS_ACTION,
                                 Uri.parse("custom://" + messageId + System.currentTimeMillis()),
                                 context, SmsDeliveryListener.class);
@@ -235,6 +230,21 @@ public class SmsSendJob extends MasterSecretJob {
     pending.putExtra("message_id", messageId);
 
     return pending;
+  }
+
+  private static JobParameters constructParameters(Context context, String name) {
+    JobParameters.Builder builder = JobParameters.newBuilder()
+                                                 .withPersistence()
+                                                 .withRequirement(new MasterSecretRequirement(context))
+                                                 .withGroupId(name);
+
+    if (TextSecurePreferences.isWifiSmsEnabled(context)) {
+      builder.withRequirement(new NetworkOrServiceRequirement(context));
+    } else {
+      builder.withRequirement(new ServiceRequirement(context));
+    }
+
+    return builder.create();
   }
 
 

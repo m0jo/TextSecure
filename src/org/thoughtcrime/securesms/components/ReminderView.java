@@ -21,7 +21,6 @@ import org.thoughtcrime.securesms.R;
 public class ReminderView extends LinearLayout {
   private ViewGroup   container;
   private ImageButton cancel;
-  private Button      ok;
   private TextView    title;
   private TextView    text;
   private ImageView   icon;
@@ -46,7 +45,6 @@ public class ReminderView extends LinearLayout {
     LayoutInflater.from(getContext()).inflate(R.layout.reminder_header, this, true);
     container = (ViewGroup  ) findViewById(R.id.container);
     cancel    = (ImageButton) findViewById(R.id.cancel);
-    ok        = (Button     ) findViewById(R.id.ok);
     title     = (TextView   ) findViewById(R.id.reminder_title);
     text      = (TextView   ) findViewById(R.id.reminder_text);
     icon      = (ImageView  ) findViewById(R.id.icon);
@@ -56,15 +54,20 @@ public class ReminderView extends LinearLayout {
     icon.setImageResource(reminder.getIconResId());
     title.setText(reminder.getTitleResId());
     text.setText(reminder.getTextResId());
-    ok.setOnClickListener(reminder.getOkListener());
-    cancel.setOnClickListener(new OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        hide();
-        if (reminder.getCancelListener() != null) reminder.getCancelListener().onClick(v);
-      }
-    });
-    container.setVisibility(View.VISIBLE);
+
+    if (reminder.isDismissable()) {
+      this.setOnClickListener(reminder.getOkListener());
+      cancel.setOnClickListener(new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+          hide();
+          if (reminder.getCancelListener() != null) reminder.getCancelListener().onClick(v);
+        }
+      });
+      container.setVisibility(View.VISIBLE);
+    } else {
+      cancel.setVisibility(View.GONE);
+    }
   }
 
   public void hide() {

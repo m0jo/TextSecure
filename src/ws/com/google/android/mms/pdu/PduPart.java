@@ -17,10 +17,20 @@
 
 package ws.com.google.android.mms.pdu;
 
+import android.graphics.Bitmap;
 import android.net.Uri;
 
+import org.thoughtcrime.securesms.crypto.MasterSecret;
+import org.thoughtcrime.securesms.mms.MediaConstraints;
+import org.thoughtcrime.securesms.util.BitmapDecodingException;
+import org.thoughtcrime.securesms.util.BitmapUtil;
+import org.thoughtcrime.securesms.util.Util;
+
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import ws.com.google.android.mms.ContentType;
 
 /**
  * The pdu part.
@@ -121,8 +131,11 @@ public class PduPart {
 
      private static final String TAG = "PduPart";
 
+     private long    id = -1;
      private boolean isEncrypted;
      private boolean isPendingPush;
+     private long    dataSize;
+     private Bitmap  thumbnail;
      
      /**
       * Empty Constructor.
@@ -134,10 +147,19 @@ public class PduPart {
      public void setEncrypted(boolean isEncrypted) {
     	 this.isEncrypted = isEncrypted;
      }
-     
+
      public boolean getEncrypted() {
     	 return isEncrypted;
      }
+
+     public void setDataSize(long dataSize) {
+       this.dataSize = dataSize;
+     }
+
+     public long getDataSize() {
+       return this.dataSize;
+     }
+
 
      public void setPendingPush(boolean isPendingPush) {
        this.isPendingPush = isPendingPush;
@@ -146,7 +168,7 @@ public class PduPart {
      public boolean isPendingPush() {
        return isPendingPush;
      }
-     
+
      /**
       * Set part data. The data are stored as byte array.
       *
@@ -308,7 +330,7 @@ public class PduPart {
      /**
       *  Set Content-Type value.
       *
-      *  @param value the value
+      *  @param contentType the value
       *  @throws NullPointerException if the value is null.
       */
      public void setContentType(byte[] contentType) {
@@ -331,7 +353,7 @@ public class PduPart {
      /**
       * Set Content-Transfer-Encoding value
       *
-      * @param contentId the content-id value
+      * @param contentTransferEncoding the value
       * @throws NullPointerException if the value is null.
       */
      public void setContentTransferEncoding(byte[] contentTransferEncoding) {
@@ -416,6 +438,22 @@ public class PduPart {
         } else {
             return new String(location);
         }
+    }
+
+    public long getId() {
+      return id;
+    }
+
+    public void setId(long id) {
+      this.id = id;
+    }
+
+    public Bitmap getThumbnail() {
+      return thumbnail;
+    }
+
+    public void setThumbnail(Bitmap thumbnail) {
+      this.thumbnail = thumbnail;
     }
 }
 

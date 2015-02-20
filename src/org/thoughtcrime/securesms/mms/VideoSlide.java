@@ -19,6 +19,7 @@ package org.thoughtcrime.securesms.mms;
 import java.io.IOException;
 
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.util.SmilUtil;
 import org.w3c.dom.smil.SMILDocument;
 import org.w3c.dom.smil.SMILMediaElement;
@@ -35,12 +36,12 @@ import android.util.Log;
 
 public class VideoSlide extends Slide {
 
-  public VideoSlide(Context context, PduPart part) {
-    super(context, part);
-  }
-
   public VideoSlide(Context context, Uri uri) throws IOException, MediaTooLargeException {
     super(context, constructPartFromUri(context, uri));
+  }
+
+  public VideoSlide(Context context, MasterSecret masterSecret, PduPart part) {
+    super(context, masterSecret, part);
   }
 
   @Override
@@ -75,11 +76,13 @@ public class VideoSlide extends Slide {
     return SmilUtil.createMediaElement("video", document, new String(getPart().getName()));
   }
 
-  private static PduPart constructPartFromUri(Context context, Uri uri) throws IOException, MediaTooLargeException {
-    PduPart part             = new PduPart();
+  private static PduPart constructPartFromUri(Context context, Uri uri)
+      throws IOException, MediaTooLargeException
+  {
+    PduPart         part     = new PduPart();
     ContentResolver resolver = context.getContentResolver();
-    Cursor cursor            = null;
-		
+    Cursor          cursor   = null;
+
     try {
       cursor = resolver.query(uri, new String[] {MediaStore.Video.Media.MIME_TYPE}, null, null, null);
       if (cursor != null && cursor.moveToFirst()) {
@@ -90,14 +93,12 @@ public class VideoSlide extends Slide {
       if (cursor != null)
         cursor.close();
     }
-		
-    if (getMediaSize(context, uri) > MAX_MESSAGE_SIZE)
-      throw new MediaTooLargeException("Video exceeds maximum message size.");
-		
+
+    assertMediaSize(context, uri);
     part.setDataUri(uri);
     part.setContentId((System.currentTimeMillis()+"").getBytes());
     part.setName(("Video" + System.currentTimeMillis()).getBytes());
-		
+
     return part;
   }
 }

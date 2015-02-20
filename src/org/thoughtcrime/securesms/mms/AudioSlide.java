@@ -19,6 +19,7 @@ package org.thoughtcrime.securesms.mms;
 import java.io.IOException;
 
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.util.SmilUtil;
 import org.w3c.dom.smil.SMILDocument;
 import org.w3c.dom.smil.SMILMediaElement;
@@ -34,19 +35,19 @@ import android.provider.MediaStore.Audio;
 
 public class AudioSlide extends Slide {
 
-  public AudioSlide(Context context, PduPart part) {
-    super(context, part);
-  }
-
   public AudioSlide(Context context, Uri uri) throws IOException, MediaTooLargeException {
     super(context, constructPartFromUri(context, uri));
   }
-	
+
+  public AudioSlide(Context context, MasterSecret masterSecret, PduPart part) {
+    super(context, masterSecret, part);
+  }
+
   @Override
     public boolean hasImage() {
     return true;
   }
-	
+
   @Override
     public boolean hasAudio() {
     return true;
@@ -69,15 +70,14 @@ public class AudioSlide extends Slide {
 
   public static PduPart constructPartFromUri(Context context, Uri uri) throws IOException, MediaTooLargeException {
     PduPart part = new PduPart();
-		
-    if (getMediaSize(context, uri) > MAX_MESSAGE_SIZE)
-      throw new MediaTooLargeException("Audio track larger than size maximum.");
-		
+
+    assertMediaSize(context, uri);
+
     Cursor cursor = null;
-		
+
     try {
       cursor = context.getContentResolver().query(uri, new String[]{Audio.Media.MIME_TYPE}, null, null, null);
-			
+
       if (cursor != null && cursor.moveToFirst())
         part.setContentType(cursor.getString(0).getBytes());
       else
@@ -90,7 +90,7 @@ public class AudioSlide extends Slide {
     part.setDataUri(uri);
     part.setContentId((System.currentTimeMillis()+"").getBytes());
     part.setName(("Audio" + System.currentTimeMillis()).getBytes());
-		
+
     return part;
   }
 }

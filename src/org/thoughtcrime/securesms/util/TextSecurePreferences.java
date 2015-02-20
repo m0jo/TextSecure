@@ -8,6 +8,8 @@ import java.io.IOException;
 
 public class TextSecurePreferences {
 
+  private static final String TAG = TextSecurePreferences.class.getSimpleName();
+
   public  static final String IDENTITY_PREF                    = "pref_choose_identity";
   public  static final String CHANGE_PASSPHRASE_PREF           = "pref_change_passphrase";
   public  static final String DISABLE_PASSPHRASE_PREF          = "pref_disable_passphrase";
@@ -31,7 +33,7 @@ public class TextSecurePreferences {
   private static final String LED_BLINK_PREF_CUSTOM            = "pref_led_blink_custom";
   public  static final String ALL_MMS_PREF                     = "pref_all_mms";
   public  static final String ALL_SMS_PREF                     = "pref_all_sms";
-  private static final String PASSPHRASE_TIMEOUT_INTERVAL_PREF = "pref_timeout_interval";
+  public  static final String PASSPHRASE_TIMEOUT_INTERVAL_PREF = "pref_timeout_interval";
   private static final String PASSPHRASE_TIMEOUT_PREF          = "pref_timeout_passphrase";
   private static final String AUTO_KEY_EXCHANGE_PREF           = "pref_auto_complete_key_exchange";
   public  static final String SCREEN_SECURITY_PREF             = "pref_screen_security";
@@ -53,7 +55,41 @@ public class TextSecurePreferences {
   private static final String FALLBACK_SMS_ALLOWED_PREF        = "pref_allow_sms_traffic_out";
   private static final String FALLBACK_SMS_ASK_REQUIRED_PREF   = "pref_sms_fallback_ask";
   private static final String DIRECT_SMS_ALLOWED_PREF          = "pref_sms_non_data_out";
+  private static final String FALLBACK_MMS_ENABLED_PREF        = "pref_mms_fallback_enabled";
   private static final String SIGNED_PREKEY_REGISTERED_PREF    = "pref_signed_prekey_registered";
+  private static final String WIFI_SMS_PREF                    = "pref_wifi_sms";
+
+  private static final String GCM_REGISTRATION_ID_PREF         = "pref_gcm_registration_id";
+  private static final String GCM_REGISTRATION_ID_VERSION_PREF = "pref_gcm_registration_id_version";
+  private static final String WEBSOCKET_REGISTERED_PREF        = "pref_websocket_registered";
+
+  private static final String PUSH_REGISTRATION_REMINDER_PREF  = "pref_push_registration_reminder";
+  public  static final String REPEAT_ALERTS_PREF               = "pref_repeat_alerts";
+
+  public static boolean isWebsocketRegistered(Context context) {
+    return getBooleanPreference(context, WEBSOCKET_REGISTERED_PREF, false);
+  }
+
+  public static void setWebsocketRegistered(Context context, boolean registered) {
+    setBooleanPreference(context, WEBSOCKET_REGISTERED_PREF, registered);
+  }
+
+  public static boolean isWifiSmsEnabled(Context context) {
+    return getBooleanPreference(context, WIFI_SMS_PREF, false);
+  }
+
+  public static int getRepeatAlertsCount(Context context) {
+    try {
+      return Integer.parseInt(getStringPreference(context, REPEAT_ALERTS_PREF, "0"));
+    } catch (NumberFormatException e) {
+      Log.w(TAG, e);
+      return 0;
+    }
+  }
+
+  public static void setRepeatAlertsCount(Context context, int count) {
+    setStringPreference(context, REPEAT_ALERTS_PREF, String.valueOf(count));
+  }
 
   public static boolean isSignedPreKeyRegistered(Context context) {
     return getBooleanPreference(context, SIGNED_PREKEY_REGISTERED_PREF, false);
@@ -62,11 +98,6 @@ public class TextSecurePreferences {
   public static void setSignedPreKeyRegistered(Context context, boolean value) {
     setBooleanPreference(context, SIGNED_PREKEY_REGISTERED_PREF, value);
   }
-
-  private static final String GCM_REGISTRATION_ID_PREF         = "pref_gcm_registration_id";
-  private static final String GCM_REGISTRATION_ID_VERSION_PREF = "pref_gcm_registration_id_version";
-
-  private static final String PUSH_REGISTRATION_REMINDER_PREF  = "pref_push_registration_reminder";
 
   public static void setGcmRegistrationId(Context context, String registrationId) {
     setStringPreference(context, GCM_REGISTRATION_ID_PREF, registrationId);
@@ -97,6 +128,14 @@ public class TextSecurePreferences {
 
   public static void setFallbackSmsAskRequired(Context context, boolean required) {
     setBooleanPreference(context, FALLBACK_SMS_ASK_REQUIRED_PREF, required);
+  }
+
+  public static boolean isFallbackMmsEnabled(Context context) {
+    return getBooleanPreference(context, FALLBACK_MMS_ENABLED_PREF, true);
+  }
+
+  public static void setFallbackMmsEnabled(Context context, boolean enabled) {
+    setBooleanPreference(context, FALLBACK_MMS_ENABLED_PREF, enabled);
   }
 
   public static boolean isDirectSmsAllowed(Context context) {
@@ -369,6 +408,4 @@ public class TextSecurePreferences {
   private static void setLongPreference(Context context, String key, long value) {
     PreferenceManager.getDefaultSharedPreferences(context).edit().putLong(key, value).apply();
   }
-
-
 }

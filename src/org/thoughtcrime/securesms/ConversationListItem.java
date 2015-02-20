@@ -21,7 +21,6 @@ import android.content.Intent;
 import android.content.res.TypedArray;
 import android.graphics.Typeface;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Handler;
 import android.provider.Contacts.Intents;
 import android.provider.ContactsContract.QuickContact;
@@ -43,6 +42,8 @@ import org.thoughtcrime.securesms.util.Emoji;
 
 import java.util.Set;
 
+import static org.thoughtcrime.securesms.util.SpanUtil.color;
+
 /**
  * A view that displays the element in a list of multiple conversation threads.
  * Used by SecureSMS's ListActivity via a ConversationListAdapter.
@@ -55,6 +56,9 @@ public class ConversationListItem extends RelativeLayout
 {
   private final static String TAG = ConversationListItem.class.getSimpleName();
 
+  private final static Typeface BOLD_TYPEFACE  = Typeface.create("sans-serif", Typeface.BOLD);
+  private final static Typeface LIGHT_TYPEFACE = Typeface.create("sans-serif-light", Typeface.NORMAL);
+
   private Context           context;
   private Set<Long>         selectedThreads;
   private Recipients        recipients;
@@ -64,7 +68,6 @@ public class ConversationListItem extends RelativeLayout
   private TextView          dateView;
   private long              count;
   private boolean           read;
-
   private ImageView         contactPhotoImage;
 
   private final Handler handler = new Handler();
@@ -102,13 +105,17 @@ public class ConversationListItem extends RelativeLayout
     this.recipients.addListener(this);
     this.fromView.setText(formatFrom(recipients, count, read));
 
-      this.subjectView.setText(Emoji.getInstance(context).emojify(thread.getDisplayBody(),
-                                                                  Emoji.EMOJI_SMALL,
-                                                                  new Emoji.InvalidatingPageLoadedListener(subjectView)),
-                               TextView.BufferType.SPANNABLE);
+    this.subjectView.setText(Emoji.getInstance(context).emojify(thread.getDisplayBody(),
+                                                                Emoji.EMOJI_SMALL,
+                                                                new Emoji.InvalidatingPageLoadedListener(subjectView)),
+                             TextView.BufferType.SPANNABLE);
+    this.subjectView.setTypeface(read ? LIGHT_TYPEFACE : BOLD_TYPEFACE);
 
-    if (thread.getDate() > 0)
-      this.dateView.setText(DateUtils.getBetterRelativeTimeSpanString(getContext(), thread.getDate()));
+    if (thread.getDate() > 0) {
+      CharSequence date = DateUtils.getBriefRelativeTimeSpanString(context, thread.getDate());
+      dateView.setText(read ? date : color(getResources().getColor(R.color.textsecure_primary), date));
+      dateView.setTypeface(read ? LIGHT_TYPEFACE : BOLD_TYPEFACE);
+    }
 
     setBackground(read, batchMode);
     setContactPhoto(this.recipients.getPrimaryRecipient());
@@ -126,7 +133,7 @@ public class ConversationListItem extends RelativeLayout
   private void setContactPhoto(final Recipient recipient) {
     if (recipient == null) return;
 
-    contactPhotoImage.setImageBitmap(recipient.getCircleCroppedContactPhoto());
+    contactPhotoImage.setImageBitmap(recipient.getContactPhoto());
 
     if (!recipient.isGroupRecipient()) {
       contactPhotoImage.setOnClickListener(new View.OnClickListener() {

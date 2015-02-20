@@ -4,7 +4,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.14.2'
+        classpath 'com.android.tools.build:gradle:1.0.0'
     }
 }
 
@@ -20,16 +20,15 @@ repositories {
 
 dependencies {
     compile 'com.google.protobuf:protobuf-java:2.5.0'
-//    compile 'com.madgag:sc-light-jdk15on:1.47.0.2'
     compile 'com.googlecode.libphonenumber:libphonenumber:6.1'
     compile 'org.whispersystems:gson:2.2.4'
-
-    compile project(':libaxolotl')
+    compile 'org.whispersystems:axolotl-android:1.0.0'
+    compile 'com.squareup.okhttp:okhttp:2.2.0'
 }
 
 android {
     compileSdkVersion 21
-    buildToolsVersion '21.1.1'
+    buildToolsVersion '21.1.2'
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7

@@ -16,7 +16,6 @@
  */
 package org.thoughtcrime.securesms;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -41,6 +40,7 @@ import org.thoughtcrime.securesms.database.PushDatabase;
 import org.thoughtcrime.securesms.jobs.PushDecryptJob;
 import org.thoughtcrime.securesms.jobs.SmsDecryptJob;
 import org.thoughtcrime.securesms.recipients.Recipient;
+import org.thoughtcrime.securesms.recipients.RecipientFactory;
 import org.thoughtcrime.securesms.sms.IncomingIdentityUpdateMessage;
 import org.thoughtcrime.securesms.sms.IncomingKeyExchangeMessage;
 import org.thoughtcrime.securesms.sms.IncomingPreKeyBundleMessage;
@@ -67,7 +67,7 @@ import java.io.IOException;
  * @author Moxie Marlinspike
  */
 
-public class ReceiveKeyActivity extends Activity {
+public class ReceiveKeyActivity extends BaseActivity {
 
   private TextView descriptionText;
 
@@ -123,7 +123,7 @@ public class ReceiveKeyActivity extends Activity {
       @Override
       public void onClick(View widget) {
         Intent intent = new Intent(ReceiveKeyActivity.this, VerifyIdentityActivity.class);
-        intent.putExtra("recipient", recipient);
+        intent.putExtra("recipient", recipient.getRecipientId());
         intent.putExtra("master_secret", masterSecret);
         intent.putExtra("remote_identity", new IdentityKeyParcelable(identityKey));
         startActivity(intent);
@@ -167,7 +167,7 @@ public class ReceiveKeyActivity extends Activity {
     this.descriptionText      = (TextView) findViewById(R.id.description_text);
     this.confirmButton        = (Button)   findViewById(R.id.ok_button);
     this.cancelButton         = (Button)   findViewById(R.id.cancel_button);
-    this.recipient            = getIntent().getParcelableExtra("recipient");
+    this.recipient            = RecipientFactory.getRecipientForId(this, getIntent().getLongExtra("recipient", -1), true);
     this.recipientDeviceId    = getIntent().getIntExtra("recipient_device_id", -1);
     this.messageId            = getIntent().getLongExtra("message_id", -1);
     this.masterSecret         = getIntent().getParcelableExtra("master_secret");

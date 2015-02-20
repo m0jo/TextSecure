@@ -19,6 +19,8 @@ package org.thoughtcrime.securesms.database.model;
 import android.content.Context;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TextAppearanceSpan;
 
@@ -43,6 +45,8 @@ public abstract class MessageRecord extends DisplayRecord {
   public static final int DELIVERY_STATUS_RECEIVED = 1;
   public static final int DELIVERY_STATUS_PENDING  = 2;
   public static final int DELIVERY_STATUS_FAILED   = 3;
+
+  private static final int MAX_DISPLAY_LENGTH = 2000;
 
   private final Recipient individualRecipient;
   private final int       recipientDeviceId;
@@ -95,13 +99,15 @@ public abstract class MessageRecord extends DisplayRecord {
   @Override
   public SpannableString getDisplayBody() {
     if (isGroupUpdate() && isOutgoing()) {
-      return emphasisAdded("Updated the group.");
+      return emphasisAdded(context.getString(R.string.MessageRecord_updated_group));
     } else if (isGroupUpdate()) {
-      return emphasisAdded(GroupUtil.getDescription(getBody().getBody()));
+      return emphasisAdded(GroupUtil.getDescription(context, getBody().getBody()));
     } else if (isGroupQuit() && isOutgoing()) {
-      return emphasisAdded("You have left the group.");
+      return emphasisAdded(context.getString(R.string.MessageRecord_left_group));
     } else if (isGroupQuit()) {
       return emphasisAdded(context.getString(R.string.ConversationItem_group_action_left, getIndividualRecipient().toShortString()));
+    } else if (getBody().getBody().length() > MAX_DISPLAY_LENGTH) {
+      return new SpannableString(getBody().getBody().substring(0, MAX_DISPLAY_LENGTH));
     }
 
     return new SpannableString(getBody().getBody());
@@ -177,9 +183,20 @@ public abstract class MessageRecord extends DisplayRecord {
 
   protected SpannableString emphasisAdded(String sequence) {
     SpannableString spannable = new SpannableString(sequence);
-    spannable.setSpan(new TextAppearanceSpan(context, android.R.style.TextAppearance_Small), 0, sequence.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    spannable.setSpan(new RelativeSizeSpan(0.9f), 0, sequence.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     spannable.setSpan(new StyleSpan(android.graphics.Typeface.ITALIC), 0, sequence.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
     return spannable;
+  }
+
+  public boolean equals(Object other) {
+    return other != null                              &&
+           other instanceof MessageRecord             &&
+           ((MessageRecord) other).getId() == getId() &&
+           ((MessageRecord) other).isMms() == isMms();
+  }
+
+  public int hashCode() {
+    return (int)getId();
   }
 }

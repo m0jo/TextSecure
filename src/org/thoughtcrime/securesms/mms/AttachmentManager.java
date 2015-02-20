@@ -20,15 +20,19 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
+import android.provider.ContactsContract;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.crypto.MasterSecret;
 import org.thoughtcrime.securesms.util.BitmapDecodingException;
 
 import java.io.IOException;
@@ -72,12 +76,23 @@ public class AttachmentManager {
     setMedia(new AudioSlide(context, audio));
   }
 
-  public void setMedia(Slide slide, int thumbnailWidth, int thumbnailHeight) {
+  public void setMedia(final Slide slide, final int thumbnailWidth, final int thumbnailHeight) {
     slideDeck.clear();
     slideDeck.addSlide(slide);
-    thumbnail.setImageDrawable(slide.getThumbnail(thumbnailWidth, thumbnailHeight));
-    attachmentView.setVisibility(View.VISIBLE);
-    attachmentListener.onAttachmentChanged();
+    new AsyncTask<Void,Void,Drawable>() {
+
+      @Override
+      protected Drawable doInBackground(Void... params) {
+        return slide.getThumbnail(thumbnailWidth, thumbnailHeight);
+      }
+
+      @Override
+      protected void onPostExecute(Drawable drawable) {
+        thumbnail.setImageDrawable(drawable);
+        attachmentView.setVisibility(View.VISIBLE);
+        attachmentListener.onAttachmentChanged();
+      }
+    }.execute();
   }
 
   public void setMedia(Slide slide) {
@@ -102,6 +117,11 @@ public class AttachmentManager {
 
   public static void selectAudio(Activity activity, int requestCode) {
     selectMediaType(activity, "audio/*", requestCode);
+  }
+
+  public static void selectContactInfo(Activity activity, int requestCode) {
+    Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+    activity.startActivityForResult(intent, requestCode);
   }
 
   private static void selectMediaType(Activity activity, String type, int requestCode) {

@@ -21,8 +21,7 @@ public class ConversationListLoader extends AbstractCursorLoader {
   @Override
   public Cursor getCursor() {
     if (filter != null && filter.trim().length() != 0) {
-      List<String> numbers = ContactAccessor.getInstance()
-          .getNumbersForThreadSearchFilter(filter, context.getContentResolver());
+      List<String> numbers = ContactAccessor.getInstance().getNumbersForThreadSearchFilter(context, filter);
 
       return DatabaseFactory.getThreadDatabase(context).getFilteredConversationList(numbers);
     } else {
